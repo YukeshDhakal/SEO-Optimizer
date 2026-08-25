@@ -54,3 +54,29 @@ export interface WordPressCredentials {
   // convenience, every real field above is still typed as `string`.
   [key: string]: string;
 }
+
+export interface ShopifyCredentials {
+  accessToken: string;
+  blogId: string;
+  blogHandle: string;
+  [key: string]: string;
+}
+
+// Webflow's CMS has no fixed post schema - every collection's fields are
+// user-defined, so a connection needs to say which collection is "the
+// blog" and which of its fields correspond to our generic PublishPostInput
+// shape. name/slug are excluded here since every Webflow collection has
+// those two built in under fixed slugs ("name"/"slug") - only body and the
+// two meta fields vary per collection and need mapping. The two meta
+// fields are optional in spirit (a collection may have no such field) but
+// typed as plain `string` (empty string = "not mapped") rather than
+// `string | undefined`, matching every other adapter's flat
+// `Record<string, string>` credentials shape.
+export interface WebflowCredentials {
+  apiToken: string;
+  collectionId: string;
+  fieldBody: string;
+  fieldMetaTitle: string;
+  fieldMetaDescription: string;
+  [key: string]: string;
+}

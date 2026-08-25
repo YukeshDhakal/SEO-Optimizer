@@ -6,6 +6,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentOrganization } from "../../../lib/organization";
 import { PauseToggleButton } from "../pause-toggle-button";
+import { ConnectShopifyForm } from "./connect-shopify-form";
+import { ConnectWebflowForm } from "./connect-webflow-form";
 import { ConnectWordPressForm } from "./connect-wordpress-form";
 import { DeleteSiteButton } from "./delete-site-button";
 import { EditSiteForm } from "./edit-site-form";
@@ -116,6 +118,15 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
         <div className="flex flex-col gap-6">
           {site.cms_type === "wordpress" && (
             <ConnectWordPressForm siteConnectionId={site.id} />
+          )}
+          {site.cms_type === "shopify" && (
+            <ConnectShopifyForm
+              shopDomain={site.base_url ?? ""}
+              siteConnectionId={site.id}
+            />
+          )}
+          {site.cms_type === "webflow" && (
+            <ConnectWebflowForm siteConnectionId={site.id} />
           )}
           <EditSiteForm site={site} />
           <DeleteSiteButton id={site.id} />
