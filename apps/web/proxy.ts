@@ -1,4 +1,5 @@
 import { authMiddleware } from "@repo/auth/proxy";
+import { keys as cmsAdaptersKeys } from "@repo/cms-adapters/keys";
 import { internationalizationMiddleware } from "@repo/internationalization/proxy";
 import { parseError } from "@repo/observability/error";
 import { secure } from "@repo/security";
@@ -10,6 +11,43 @@ import {
 import { createNEMO } from "@rescale/nemo";
 import { type NextProxy, type NextRequest, NextResponse } from "next/server";
 import { env } from "@/env";
+
+const { NEXT_PUBLIC_ROOT_DOMAIN } = cmsAdaptersKeys();
+
+// A hosted-blog post at https://{orgSlug}.{ROOT_DOMAIN}/blog/{postSlug}
+// rewrites internally to /tenant-blog/{orgSlug}/{postSlug} — a route
+// outside the [locale] tree, since tenant content isn't localized in this
+// MVP. Runs before i18n/arcjet, and returns early: none of that machinery
+// (locale negotiation, bot detection tuned for the marketing site) applies
+// to a customer's own published post.
+const rewriteTenantBlogRequest = (
+  request: NextRequest
+): NextResponse | undefined => {
+  const host = request.headers.get("host") ?? "";
+  const hostname = host.split(":")[0];
+
+  if (
+    !hostname.endsWith(`.${NEXT_PUBLIC_ROOT_DOMAIN}`) ||
+    hostname === `www.${NEXT_PUBLIC_ROOT_DOMAIN}`
+  ) {
+    return;
+  }
+
+  const orgSlug = hostname.slice(
+    0,
+    hostname.length - `.${NEXT_PUBLIC_ROOT_DOMAIN}`.length
+  );
+  const match = request.nextUrl.pathname.match(/^\/blog\/([^/]+)\/?$/);
+
+  if (!(orgSlug && match)) {
+    return;
+  }
+
+  const [, postSlug] = match;
+  const url = request.nextUrl.clone();
+  url.pathname = `/tenant-blog/${orgSlug}/${postSlug}`;
+  return NextResponse.rewrite(url);
+};
 
 export const config = {
   // matcher tells Next.js which routes to run the middleware on. This runs the
@@ -45,7 +83,7 @@ const arcjetMiddleware = async (request: NextRequest) => {
   }
 };
 
-// Compose non-Clerk middleware with Nemo
+// Compose the marketing site's non-auth middleware with Nemo
 const composedMiddleware = createNEMO(
   {},
   {
@@ -53,8 +91,12 @@ const composedMiddleware = createNEMO(
   }
 );
 
-// Clerk middleware wraps other middleware in its callback
-export default authMiddleware(async (_auth, request, event) => {
+export default authMiddleware(async (_userId, request, event) => {
+  const tenantBlogResponse = rewriteTenantBlogRequest(request);
+  if (tenantBlogResponse) {
+    return tenantBlogResponse;
+  }
+
   // Run security headers first
   const headersResponse = securityHeaders();
 

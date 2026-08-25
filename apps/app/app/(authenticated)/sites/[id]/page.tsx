@@ -1,8 +1,11 @@
 import { createClient } from "@repo/auth/server";
 import { Badge } from "@repo/design-system/components/ui/badge";
+import { Button } from "@repo/design-system/components/ui/button";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentOrganization } from "../../../lib/organization";
+import { ConnectWordPressForm } from "./connect-wordpress-form";
 import { DeleteSiteButton } from "./delete-site-button";
 import { EditSiteForm } from "./edit-site-form";
 
@@ -52,6 +55,14 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
             {site.status}
           </Badge>
           {site.paused && <Badge variant="outline">Paused</Badge>}
+          <Button asChild size="sm" variant="outline">
+            <Link href={`/sites/${site.id}/posts`}>Posts</Link>
+          </Button>
+          {site.status === "connected" && (
+            <Button asChild size="sm">
+              <Link href={`/sites/${site.id}/posts/new`}>New post</Link>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -68,6 +79,9 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
 
       {canManage && (
         <div className="flex flex-col gap-6">
+          {site.cms_type === "wordpress" && (
+            <ConnectWordPressForm siteConnectionId={site.id} />
+          )}
           <EditSiteForm site={site} />
           <DeleteSiteButton id={site.id} />
         </div>

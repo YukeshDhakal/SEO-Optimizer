@@ -109,6 +109,75 @@ export type Database = {
         }
         Relationships: []
       }
+      posts: {
+        Row: {
+          content_html: string
+          content_markdown: string | null
+          created_at: string
+          created_by: string
+          external_post_id: string | null
+          id: string
+          meta_description: string | null
+          meta_title: string | null
+          organization_id: string
+          published_at: string | null
+          published_url: string | null
+          site_connection_id: string
+          slug: string
+          status: string
+          title: string
+        }
+        Insert: {
+          content_html: string
+          content_markdown?: string | null
+          created_at?: string
+          created_by: string
+          external_post_id?: string | null
+          id?: string
+          meta_description?: string | null
+          meta_title?: string | null
+          organization_id: string
+          published_at?: string | null
+          published_url?: string | null
+          site_connection_id: string
+          slug: string
+          status?: string
+          title: string
+        }
+        Update: {
+          content_html?: string
+          content_markdown?: string | null
+          created_at?: string
+          created_by?: string
+          external_post_id?: string | null
+          id?: string
+          meta_description?: string | null
+          meta_title?: string | null
+          organization_id?: string
+          published_at?: string | null
+          published_url?: string | null
+          site_connection_id?: string
+          slug?: string
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "posts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_site_connection_id_fkey"
+            columns: ["site_connection_id"]
+            isOneToOne: false
+            referencedRelation: "site_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_connections: {
         Row: {
           base_url: string | null
@@ -194,6 +263,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_site_credentials: {
+        Args: { p_site_connection_id: string }
+        Returns: Json
+      }
       is_org_admin: { Args: { target_org_id: string }; Returns: boolean }
       is_org_admin_for_site: {
         Args: { target_site_id: string }
@@ -201,6 +274,10 @@ export type Database = {
       }
       is_org_member: { Args: { target_org_id: string }; Returns: boolean }
       is_org_owner: { Args: { target_org_id: string }; Returns: boolean }
+      set_site_credentials: {
+        Args: { p_secret: Json; p_site_connection_id: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

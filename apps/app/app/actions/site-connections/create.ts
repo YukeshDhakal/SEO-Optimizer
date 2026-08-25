@@ -8,9 +8,11 @@ export interface CreateSiteConnectionState {
   error?: string;
 }
 
-// Metadata CRUD only — this does not validate the CMS or store any real
-// credentials yet (that's `cms_credentials` + the real CmsAdapter interface
-// in Phase 2). `status` starts at its schema default ('pending').
+// `hosted_blog` needs no external credentials at all (its adapter's
+// testConnection always reports ok) - go straight to 'connected' rather
+// than making the user click a pointless "connect" step. `wordpress` stays
+// at the schema default ('pending') until real credentials are saved via
+// `connectWordPressSite`.
 export const createSiteConnection = async (
   _prevState: CreateSiteConnectionState,
   formData: FormData
@@ -39,6 +41,7 @@ export const createSiteConnection = async (
     display_name: displayName,
     cms_type: cmsType,
     base_url: baseUrl || null,
+    status: cmsType === "hosted_blog" ? "connected" : "pending",
   });
 
   if (error) {

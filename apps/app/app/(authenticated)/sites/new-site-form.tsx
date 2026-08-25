@@ -1,5 +1,6 @@
 "use client";
 
+import { CMS_TYPES } from "@repo/cms-adapters";
 import { Button } from "@repo/design-system/components/ui/button";
 import {
   Card,
@@ -15,12 +16,10 @@ import {
   createSiteConnection,
 } from "../../actions/site-connections/create";
 
-const initialState: CreateSiteConnectionState = {};
-
 // A plain native <select> rather than the design system's Radix-based
 // Select — this form posts via a server action, and a native element needs
 // no client-side value wiring to submit correctly.
-const CMS_TYPES = ["wordpress", "hosted_blog"];
+const initialState: CreateSiteConnectionState = {};
 
 export const NewSiteForm = () => {
   const formRef = useRef<HTMLFormElement>(null);
