@@ -1,5 +1,6 @@
 import "server-only";
 
+import type { Database } from "@repo/database";
 import { createServerClient } from "@supabase/ssr";
 import type { User } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
@@ -13,7 +14,7 @@ export const createClient = async () => {
   const cookieStore = await cookies();
   const env = keys();
 
-  return createServerClient(
+  return createServerClient<Database>(
     env.NEXT_PUBLIC_SUPABASE_URL ?? "",
     env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
     {

@@ -5,6 +5,7 @@ import { secure } from "@repo/security";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { env } from "@/env";
+import { getCurrentOrganization } from "../lib/organization";
 import { NotificationsProvider } from "./components/notifications-provider";
 import { GlobalSidebar } from "./components/sidebar";
 
@@ -18,16 +19,23 @@ const AppLayout = async ({ children }: AppLayoutProperties) => {
   }
 
   const user = await currentUser();
-  const betaFeature = await showBetaFeature();
 
   if (!user) {
     redirect("/sign-in");
   }
 
+  const organization = await getCurrentOrganization();
+
+  if (!organization) {
+    redirect("/onboarding");
+  }
+
+  const betaFeature = await showBetaFeature();
+
   return (
     <NotificationsProvider userId={user.id}>
       <SidebarProvider>
-        <GlobalSidebar>
+        <GlobalSidebar organization={organization}>
           {betaFeature && (
             <div className="m-4 rounded-full bg-blue-500 p-1.5 text-center text-sm text-white">
               Beta feature now available

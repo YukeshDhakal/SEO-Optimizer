@@ -2,10 +2,15 @@ import "server-only";
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { keys } from "./keys";
+import type { Database } from "./types";
 
 const env = keys();
 
-const globalForSupabase = global as unknown as { supabase?: SupabaseClient };
+const globalForSupabase = global as unknown as {
+  supabase?: SupabaseClient<Database>;
+};
+
+export type { Database, Tables, TablesInsert, TablesUpdate } from "./types";
 
 // Backend, service-role Supabase client — bypasses RLS, never expose to the
 // browser. Request-scoped, session-cookie-bound access (respecting RLS)
@@ -17,9 +22,9 @@ const globalForSupabase = global as unknown as { supabase?: SupabaseClient };
 // so the rest of the app can still typecheck/build; anything that actually
 // touches the database will throw a clear error until the key is pasted in
 // from the Supabase dashboard (Project Settings > API) into `.env`.
-const createDatabaseClient = (): SupabaseClient => {
+const createDatabaseClient = (): SupabaseClient<Database> => {
   if (!(env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY)) {
-    return new Proxy({} as SupabaseClient, {
+    return new Proxy({} as SupabaseClient<Database>, {
       get() {
         throw new Error(
           "SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are not configured — set them in packages/database/.env (see .env.example)."
@@ -28,7 +33,7 @@ const createDatabaseClient = (): SupabaseClient => {
     });
   }
 
-  return createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+  return createClient<Database>(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false },
   });
 };

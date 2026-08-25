@@ -34,6 +34,7 @@ import {
   useSidebar,
 } from "@repo/design-system/components/ui/sidebar";
 import { cn } from "@repo/design-system/lib/utils";
+import type { Tables } from "@repo/database";
 import { NotificationsTrigger } from "@repo/notifications/components/trigger";
 import {
   AnchorIcon,
@@ -42,6 +43,7 @@ import {
   ChevronRightIcon,
   FolderIcon,
   FrameIcon,
+  GlobeIcon,
   LifeBuoyIcon,
   MapIcon,
   MoreHorizontalIcon,
@@ -58,6 +60,7 @@ import { Search } from "./search";
 
 interface GlobalSidebarProperties {
   readonly children: ReactNode;
+  readonly organization: Tables<"organizations">;
 }
 
 const data = {
@@ -67,6 +70,11 @@ const data = {
     avatar: "/avatars/shadcn.jpg",
   },
   navMain: [
+    {
+      title: "Sites",
+      url: "/sites",
+      icon: GlobeIcon,
+    },
     {
       title: "Playground",
       url: "#",
@@ -189,7 +197,10 @@ const data = {
   ],
 };
 
-export const GlobalSidebar = ({ children }: GlobalSidebarProperties) => {
+export const GlobalSidebar = ({
+  children,
+  organization,
+}: GlobalSidebarProperties) => {
   const sidebar = useSidebar();
 
   return (
@@ -200,12 +211,13 @@ export const GlobalSidebar = ({ children }: GlobalSidebarProperties) => {
             <SidebarMenuItem>
               <div
                 className={cn(
-                  "h-[36px] overflow-hidden transition-all [&>div]:w-full",
+                  "flex h-[36px] items-center overflow-hidden px-2 font-medium text-sm transition-all",
                   sidebar.open ? "" : "-mx-1"
                 )}
               >
-                {/* Organization switcher returns in Phase 1, once
-                    organizations/organization_members exist. */}
+                {/* No org switcher yet — one org per user in the UI for
+                    now (see apps/app/app/lib/organization.ts). */}
+                <span className="truncate">{organization.name}</span>
               </div>
             </SidebarMenuItem>
           </SidebarMenu>
