@@ -1,5 +1,4 @@
 import { analytics } from "@repo/analytics/server";
-import { clerkClient } from "@repo/auth/server";
 import { parseError } from "@repo/observability/error";
 import { log } from "@repo/observability/log";
 import type { Stripe } from "@repo/payments";
@@ -8,16 +7,13 @@ import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { env } from "@/env";
 
-const getUserFromCustomerId = async (customerId: string) => {
-  const clerk = await clerkClient();
-  const users = await clerk.users.getUserList();
-
-  const user = users.data.find(
-    (currentUser) => currentUser.privateMetadata.stripeCustomerId === customerId
-  );
-
-  return user;
-};
+// Clerk's `privateMetadata.stripeCustomerId` lookup doesn't have a
+// Supabase equivalent yet — Phase 6 (Stripe billing) adds
+// `organizations.stripe_customer_id`, which this should query via
+// `@repo/database` instead. Stubbed to `undefined` until that table exists.
+const getUserFromCustomerId = async (
+  _customerId: string
+): Promise<{ id: string } | undefined> => Promise.resolve(undefined);
 
 const handleCheckoutSessionCompleted = async (
   data: Stripe.Checkout.Session

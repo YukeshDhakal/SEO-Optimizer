@@ -1,7 +1,8 @@
-import { auth, currentUser } from "@repo/auth/server";
+import { currentUser } from "@repo/auth/server";
 import { SidebarProvider } from "@repo/design-system/components/ui/sidebar";
 import { showBetaFeature } from "@repo/feature-flags";
 import { secure } from "@repo/security";
+import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { env } from "@/env";
 import { NotificationsProvider } from "./components/notifications-provider";
@@ -17,11 +18,10 @@ const AppLayout = async ({ children }: AppLayoutProperties) => {
   }
 
   const user = await currentUser();
-  const { redirectToSignIn } = await auth();
   const betaFeature = await showBetaFeature();
 
   if (!user) {
-    return redirectToSignIn();
+    redirect("/sign-in");
   }
 
   return (

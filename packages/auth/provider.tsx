@@ -1,58 +1,76 @@
 "use client";
 
-import { ClerkProvider } from "@clerk/nextjs";
-import { dark } from "@clerk/themes";
-import type { Theme } from "@clerk/types";
-import { useTheme } from "next-themes";
-import type { ComponentProps } from "react";
+import type { Session, SupabaseClient, User } from "@supabase/supabase-js";
+import {
+  createContext,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { createClient } from "./client";
 
-type AuthProviderProperties = ComponentProps<typeof ClerkProvider> & {
+type AuthContextValue = {
+  supabase: SupabaseClient;
+  session: Session | null;
+  user: User | null;
+  isLoaded: boolean;
+};
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+type AuthProviderProperties = {
+  children: ReactNode;
+  // Kept for call-site compatibility with the previous Clerk-based provider
+  // (see apps/app/app/layout.tsx) — unused with Supabase Auth.
   privacyUrl?: string;
   termsUrl?: string;
   helpUrl?: string;
 };
 
-export const AuthProvider = ({
-  privacyUrl,
-  termsUrl,
-  helpUrl,
-  ...properties
-}: AuthProviderProperties) => {
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === "dark";
-  const baseTheme = isDark ? dark : undefined;
+export const AuthProvider = ({ children }: AuthProviderProperties) => {
+  const supabase = useMemo(() => createClient(), []);
+  const [session, setSession] = useState<Session | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  const variables: Theme["variables"] = {
-    fontFamily: "var(--font-sans)",
-    fontFamilyButtons: "var(--font-sans)",
-    fontWeight: {
-      bold: "var(--font-weight-bold)",
-      normal: "var(--font-weight-normal)",
-      medium: "var(--font-weight-medium)",
-    },
-  };
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setIsLoaded(true);
+    });
 
-  const elements: Theme["elements"] = {
-    dividerLine: "bg-border",
-    socialButtonsIconButton: "bg-card",
-    navbarButton: "text-foreground",
-    organizationSwitcherTrigger__open: "bg-background",
-    organizationPreviewMainIdentifier: "text-foreground",
-    organizationSwitcherTriggerIcon: "text-muted-foreground",
-    organizationPreview__organizationSwitcherTrigger: "gap-2",
-    organizationPreviewAvatarContainer: "shrink-0",
-  };
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession);
+      setIsLoaded(true);
+    });
 
-  const layout: Theme["layout"] = {
-    privacyPageUrl: privacyUrl,
-    termsPageUrl: termsUrl,
-    helpPageUrl: helpUrl,
-  };
+    return () => subscription.unsubscribe();
+  }, [supabase]);
+
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      supabase,
+      session,
+      user: session?.user ?? null,
+      isLoaded,
+    }),
+    [supabase, session, isLoaded]
+  );
 
   return (
-    <ClerkProvider
-      {...properties}
-      appearance={{ layout, baseTheme, elements, variables }}
-    />
+    <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
   );
+};
+
+export const useAuth = (): AuthContextValue => {
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+
+  return context;
 };
