@@ -61,6 +61,9 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
           <Button asChild size="sm" variant="outline">
             <Link href={`/sites/${site.id}/posts`}>Posts</Link>
           </Button>
+          <Button asChild size="sm" variant="outline">
+            <Link href={`/sites/${site.id}/schedule`}>Schedule</Link>
+          </Button>
           {site.status === "connected" && (
             <>
               <Button asChild size="sm" variant="outline">

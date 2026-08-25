@@ -139,12 +139,16 @@ const data = {
     },
     {
       title: "Settings",
-      url: "#",
+      url: "/settings",
       icon: Settings2Icon,
       items: [
         {
+          // Phase 4: approval/pause/quota toggles (tenant_settings) live
+          // here. Team/Billing/Limits stay unimplemented template stubs —
+          // Team needs an invite flow, Billing is Phase 6, Limits overlaps
+          // tenant_settings' own quota fields once Phase 6 enforces them.
           title: "General",
-          url: "#",
+          url: "/settings",
         },
         {
           title: "Team",

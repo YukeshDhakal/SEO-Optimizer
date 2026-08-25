@@ -1,22 +1,26 @@
 "use server";
 
 import { createClient } from "@repo/auth/server";
-import type { PipelineStepName } from "@repo/ai-engine";
-import { runContentPipeline } from "@repo/ai-engine";
-import type { Json, TablesUpdate } from "@repo/database";
+import { contentPipelineWorkflow } from "@repo/workflows";
 import { redirect } from "next/navigation";
+import { start } from "workflow/api";
 import { getCurrentOrganization } from "../../lib/organization";
 
 export interface GeneratePostState {
   error?: string;
 }
 
-// Mirrors Phase 2's `publishPost` action shape (write a row, do the real
-// work, update the row with the honest outcome either way) but for the
-// multi-step AI pipeline: a `pipeline_runs` row is created up front so
-// there's always a record even if the pipeline throws, and each step gets
-// its own `pipeline_run_steps` row as `runContentPipeline`'s callbacks fire
-// — this is what the run status page reads to show progress on reload.
+// Phase 4: the manual "Generate post" trigger now runs the durable
+// Workflow DevKit pipeline (`@repo/workflows`) instead of Phase 3's
+// synchronous `runContentPipeline` call. `start()` returns immediately —
+// this action still awaits `run.returnValue` so the existing
+// redirect-to-the-finished-run UX is unchanged, but the run itself is now
+// crash-resumable and step-cached under the hood, and the exact same
+// workflow function is what the Phase 4 cron dispatcher calls for
+// scheduled runs. All authorization (org membership/role, site ownership)
+// happens here, via the request-scoped RLS client, *before* `start()` is
+// called — the workflow's own steps run detached from this session and use
+// the service-role client, trusting whatever input this action gives them.
 export const generatePost = async (
   _prevState: GeneratePostState,
   formData: FormData
@@ -54,113 +58,27 @@ export const generatePost = async (
     return { error: "Site not found." };
   }
 
-  const { data: run, error: insertError } = await supabase
-    .from("pipeline_runs")
-    .insert({
-      organization_id: organization.id,
-      site_connection_id: siteConnectionId,
-      created_by: user.id,
-      input: { topicHint },
-    })
-    .select("id")
-    .single();
-
-  if (insertError || !run) {
+  let runId: string;
+  try {
+    const run = await start(contentPipelineWorkflow, [
+      {
+        organizationId: organization.id,
+        siteConnectionId,
+        createdBy: user.id,
+        topicHint,
+        triggerType: "manual",
+      },
+    ]);
+    const result = await run.returnValue;
+    runId = result.runId;
+  } catch {
+    // The workflow's own steps record a terminal `pipeline_runs` status
+    // (failed/blocked) for every handled failure mode before returning —
+    // this catch only fires for something unexpected enough that no run
+    // row exists to redirect to at all (e.g. `start()` itself couldn't
+    // reach the workflow runtime).
     return { error: "Couldn't start the pipeline run. Please try again." };
   }
 
-  let currentStepRowId: string | null = null;
-
-  const updateRunStatus = async (
-    fields: TablesUpdate<"pipeline_runs">
-  ): Promise<void> => {
-    await supabase.from("pipeline_runs").update(fields).eq("id", run.id);
-  };
-
-  try {
-    const result = await runContentPipeline(
-      { organizationId: organization.id, topicHint },
-      {
-        onStepStart: async (step: PipelineStepName) => {
-          await updateRunStatus({ current_step: step });
-          const { data: stepRow } = await supabase
-            .from("pipeline_run_steps")
-            .insert({
-              pipeline_run_id: run.id,
-              step_name: step,
-              status: "running",
-            })
-            .select("id")
-            .single();
-          currentStepRowId = stepRow?.id ?? null;
-        },
-        onStepComplete: async (_step, output) => {
-          if (!currentStepRowId) {
-            return;
-          }
-          await supabase
-            .from("pipeline_run_steps")
-            .update({
-              status: "succeeded",
-              // Every step's output is a plain, JSON-serializable value
-              // (strings/objects/arrays of those) — safe to store as-is.
-              output: output as Json,
-              finished_at: new Date().toISOString(),
-            })
-            .eq("id", currentStepRowId);
-        },
-        onStepFailed: async (_step, error) => {
-          if (!currentStepRowId) {
-            return;
-          }
-          await supabase
-            .from("pipeline_run_steps")
-            .update({
-              status: "failed",
-              error: error instanceof Error ? error.message : String(error),
-              finished_at: new Date().toISOString(),
-            })
-            .eq("id", currentStepRowId);
-        },
-      }
-    );
-
-    if (result.status === "succeeded") {
-      const { data: post } = await supabase
-        .from("posts")
-        .insert({
-          organization_id: organization.id,
-          site_connection_id: siteConnectionId,
-          title: result.post.title,
-          slug: result.post.slug,
-          content_html: result.post.contentHtml,
-          content_markdown: result.post.contentMarkdown,
-          meta_title: result.post.metaTitle,
-          meta_description: result.post.metaDescription,
-          created_by: user.id,
-        })
-        .select("id")
-        .single();
-
-      await updateRunStatus({
-        status: "succeeded",
-        post_id: post?.id ?? null,
-        finished_at: new Date().toISOString(),
-      });
-    } else if (result.status === "blocked") {
-      await updateRunStatus({
-        status: "blocked",
-        error: result.reason,
-        finished_at: new Date().toISOString(),
-      });
-    }
-  } catch (error) {
-    await updateRunStatus({
-      status: "failed",
-      error: error instanceof Error ? error.message : "Generation failed.",
-      finished_at: new Date().toISOString(),
-    });
-  }
-
-  redirect(`/sites/${siteConnectionId}/runs/${run.id}`);
+  redirect(`/sites/${siteConnectionId}/runs/${runId}`);
 };

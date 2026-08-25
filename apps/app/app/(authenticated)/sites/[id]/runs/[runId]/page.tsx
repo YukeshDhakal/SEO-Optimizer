@@ -11,6 +11,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentOrganization } from "../../../../../lib/organization";
+import { ApprovalActions } from "./approval-actions";
 
 export const metadata: Metadata = {
   title: "Generation run",
@@ -24,18 +25,21 @@ const statusVariant = (status: string) => {
   if (status === "succeeded") {
     return "default" as const;
   }
-  if (status === "failed" || status === "blocked") {
+  if (status === "failed" || status === "blocked" || status === "rejected") {
     return "destructive" as const;
   }
   return "secondary" as const;
 };
 
-// Not a live/streaming view — this is the manually-triggered pipeline
-// (Phase 3); the whole run completes within the request that created it, so
-// by the time this page is reached the run is already finished (or, for a
-// run that somehow got interrupted, "running" reflects its last known
-// step). Live progress + a real SSE timeline is Phase 4 territory, once the
-// pipeline runs durably via Workflow DevKit + cron instead of inline.
+// Still a read-on-load view, not a live/streaming one — Phase 4 made the
+// underlying run durable (real Workflow DevKit steps, resumable across a
+// crash, cacheable per-step) but this page reads the same
+// pipeline_runs/pipeline_run_steps snapshot Phase 3 did, just refreshed by
+// reloading. A real SSE/live timeline (per the plan's dashboard section)
+// is a later, separate improvement, not required for durability itself.
+// A run can now legitimately sit at status "running" with
+// current_step "approval_gate" indefinitely (a real suspend, not a stall)
+// when the org's tenant_settings.require_approval is on.
 const RunDetailPage = async ({ params }: RunDetailPageProperties) => {
   const { id, runId } = await params;
   const organization = await getCurrentOrganization();
@@ -81,6 +85,20 @@ const RunDetailPage = async ({ params }: RunDetailPageProperties) => {
           )}
         </div>
       </div>
+
+      {run.status === "running" &&
+        run.current_step === "approval_gate" &&
+        (organization.role === "owner" || organization.role === "admin") && (
+          <Card>
+            <CardContent className="flex items-center justify-between pt-6">
+              <p className="text-sm">
+                This run is waiting for approval before it writes a draft
+                post.
+              </p>
+              <ApprovalActions runId={run.id} siteConnectionId={id} />
+            </CardContent>
+          </Card>
+        )}
 
       {run.error && (
         <Card>

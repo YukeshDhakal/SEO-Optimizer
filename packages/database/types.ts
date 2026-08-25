@@ -14,7 +14,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -163,10 +163,12 @@ export type Database = {
           input: Json
           organization_id: string
           post_id: string | null
+          schedule_id: string | null
           site_connection_id: string
           started_at: string
           status: string
           trigger_type: string
+          workflow_run_id: string | null
         }
         Insert: {
           created_by: string
@@ -177,10 +179,12 @@ export type Database = {
           input?: Json
           organization_id: string
           post_id?: string | null
+          schedule_id?: string | null
           site_connection_id: string
           started_at?: string
           status?: string
           trigger_type?: string
+          workflow_run_id?: string | null
         }
         Update: {
           created_by?: string
@@ -191,10 +195,12 @@ export type Database = {
           input?: Json
           organization_id?: string
           post_id?: string | null
+          schedule_id?: string | null
           site_connection_id?: string
           started_at?: string
           status?: string
           trigger_type?: string
+          workflow_run_id?: string | null
         }
         Relationships: [
           {
@@ -209,6 +215,13 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_runs_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "schedules"
             referencedColumns: ["id"]
           },
           {
@@ -289,6 +302,66 @@ export type Database = {
           },
         ]
       }
+      schedules: {
+        Row: {
+          cadence: string
+          created_at: string
+          created_by: string
+          enabled: boolean
+          id: string
+          next_run_at: string | null
+          organization_id: string
+          site_connection_id: string
+          timezone: string
+          topic_hint: string
+          topic_source: string
+          updated_at: string
+        }
+        Insert: {
+          cadence: string
+          created_at?: string
+          created_by: string
+          enabled?: boolean
+          id?: string
+          next_run_at?: string | null
+          organization_id: string
+          site_connection_id: string
+          timezone?: string
+          topic_hint: string
+          topic_source?: string
+          updated_at?: string
+        }
+        Update: {
+          cadence?: string
+          created_at?: string
+          created_by?: string
+          enabled?: boolean
+          id?: string
+          next_run_at?: string | null
+          organization_id?: string
+          site_connection_id?: string
+          timezone?: string
+          topic_hint?: string
+          topic_source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedules_site_connection_id_fkey"
+            columns: ["site_connection_id"]
+            isOneToOne: false
+            referencedRelation: "site_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_connections: {
         Row: {
           base_url: string | null
@@ -328,6 +401,44 @@ export type Database = {
             foreignKeyName: "site_connections_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenant_settings: {
+        Row: {
+          content_policy: Json
+          max_posts_per_day: number | null
+          max_posts_per_week: number | null
+          organization_id: string
+          paused: boolean
+          require_approval: boolean
+          updated_at: string
+        }
+        Insert: {
+          content_policy?: Json
+          max_posts_per_day?: number | null
+          max_posts_per_week?: number | null
+          organization_id: string
+          paused?: boolean
+          require_approval?: boolean
+          updated_at?: string
+        }
+        Update: {
+          content_policy?: Json
+          max_posts_per_day?: number | null
+          max_posts_per_week?: number | null
+          organization_id?: string
+          paused?: boolean
+          require_approval?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_settings_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },

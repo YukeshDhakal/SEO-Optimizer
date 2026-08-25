@@ -15,10 +15,11 @@ interface GeneratePostFormProperties {
   readonly siteConnectionId: string;
 }
 
-// Manually-triggered (Phase 3) — no scheduling/cron yet (Phase 4). Submitting
-// runs the whole pipeline synchronously in this one request, so this can take
-// a while (several model calls, one retry loop) before the redirect to the
-// run status page lands.
+// Manually-triggered. As of Phase 4 this starts a durable Workflow DevKit
+// run (crash-resumable, step-cached) rather than Phase 3's plain synchronous
+// call, but this form still awaits the full result before redirecting —
+// several model calls plus a possible retry loop, so submitting can take a
+// while either way.
 export const GeneratePostForm = ({
   siteConnectionId,
 }: GeneratePostFormProperties) => {
