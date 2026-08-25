@@ -1,3 +1,4 @@
+import { keys as aiEngine } from "@repo/ai-engine/keys";
 import { keys as analytics } from "@repo/analytics/keys";
 import { keys as auth } from "@repo/auth/keys";
 import { keys as cmsAdapters } from "@repo/cms-adapters/keys";
@@ -15,6 +16,7 @@ import { createEnv } from "@t3-oss/env-nextjs";
 export const env = createEnv({
   skipValidation: process.env.SKIP_ENV_VALIDATION === "true",
   extends: [
+    aiEngine(),
     auth(),
     analytics(),
     cmsAdapters(),

@@ -109,6 +109,117 @@ export type Database = {
         }
         Relationships: []
       }
+      pipeline_run_steps: {
+        Row: {
+          error: string | null
+          finished_at: string | null
+          id: string
+          input: Json | null
+          output: Json | null
+          pipeline_run_id: string
+          started_at: string
+          status: string
+          step_name: string
+        }
+        Insert: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          input?: Json | null
+          output?: Json | null
+          pipeline_run_id: string
+          started_at?: string
+          status: string
+          step_name: string
+        }
+        Update: {
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          input?: Json | null
+          output?: Json | null
+          pipeline_run_id?: string
+          started_at?: string
+          status?: string
+          step_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_run_steps_pipeline_run_id_fkey"
+            columns: ["pipeline_run_id"]
+            isOneToOne: false
+            referencedRelation: "pipeline_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pipeline_runs: {
+        Row: {
+          created_by: string
+          current_step: string | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          input: Json
+          organization_id: string
+          post_id: string | null
+          site_connection_id: string
+          started_at: string
+          status: string
+          trigger_type: string
+        }
+        Insert: {
+          created_by: string
+          current_step?: string | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          input?: Json
+          organization_id: string
+          post_id?: string | null
+          site_connection_id: string
+          started_at?: string
+          status?: string
+          trigger_type?: string
+        }
+        Update: {
+          created_by?: string
+          current_step?: string | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          input?: Json
+          organization_id?: string
+          post_id?: string | null
+          site_connection_id?: string
+          started_at?: string
+          status?: string
+          trigger_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pipeline_runs_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_runs_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pipeline_runs_site_connection_id_fkey"
+            columns: ["site_connection_id"]
+            isOneToOne: false
+            referencedRelation: "site_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           content_html: string
@@ -268,11 +379,19 @@ export type Database = {
         Returns: Json
       }
       is_org_admin: { Args: { target_org_id: string }; Returns: boolean }
+      is_org_admin_for_pipeline_run: {
+        Args: { target_run_id: string }
+        Returns: boolean
+      }
       is_org_admin_for_site: {
         Args: { target_site_id: string }
         Returns: boolean
       }
       is_org_member: { Args: { target_org_id: string }; Returns: boolean }
+      is_org_member_for_pipeline_run: {
+        Args: { target_run_id: string }
+        Returns: boolean
+      }
       is_org_owner: { Args: { target_org_id: string }; Returns: boolean }
       set_site_credentials: {
         Args: { p_secret: Json; p_site_connection_id: string }

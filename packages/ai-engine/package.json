@@ -1,0 +1,25 @@
+{
+  "name": "@repo/ai-engine",
+  "version": "0.0.0",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "scripts": {
+    "build": "tsc --noEmit --emitDeclarationOnly false",
+    "clean": "git clean -xdf .cache .turbo dist node_modules",
+    "typecheck": "tsc --noEmit --emitDeclarationOnly false",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.113",
+    "@t3-oss/env-nextjs": "^0.13.10",
+    "ai": "^6.0.116",
+    "marked": "^18.0.11",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "*",
+    "@types/node": "25.3.5",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}

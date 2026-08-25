@@ -10,7 +10,7 @@ const globalForSupabase = global as unknown as {
   supabase?: SupabaseClient<Database>;
 };
 
-export type { Database, Tables, TablesInsert, TablesUpdate } from "./types";
+export type { Database, Json, Tables, TablesInsert, TablesUpdate } from "./types";
 
 // Backend, service-role Supabase client — bypasses RLS, never expose to the
 // browser. Request-scoped, session-cookie-bound access (respecting RLS)

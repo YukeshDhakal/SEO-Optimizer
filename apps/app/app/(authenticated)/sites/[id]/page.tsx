@@ -56,12 +56,20 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
           </Badge>
           {site.paused && <Badge variant="outline">Paused</Badge>}
           <Button asChild size="sm" variant="outline">
+            <Link href={`/sites/${site.id}/runs`}>Runs</Link>
+          </Button>
+          <Button asChild size="sm" variant="outline">
             <Link href={`/sites/${site.id}/posts`}>Posts</Link>
           </Button>
           {site.status === "connected" && (
-            <Button asChild size="sm">
-              <Link href={`/sites/${site.id}/posts/new`}>New post</Link>
-            </Button>
+            <>
+              <Button asChild size="sm" variant="outline">
+                <Link href={`/sites/${site.id}/generate`}>Generate</Link>
+              </Button>
+              <Button asChild size="sm">
+                <Link href={`/sites/${site.id}/posts/new`}>New post</Link>
+              </Button>
+            </>
           )}
         </div>
       </div>
