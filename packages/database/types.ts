@@ -18,6 +18,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_log: {
+        Row: {
+          action: string
+          actor: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          metadata: Json
+          organization_id: string
+        }
+        Insert: {
+          action: string
+          actor?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+        }
+        Update: {
+          action?: string
+          actor?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cms_credentials: {
         Row: {
           created_at: string
@@ -235,6 +276,7 @@ export type Database = {
       }
       posts: {
         Row: {
+          content_embedding: string | null
           content_html: string
           content_markdown: string | null
           created_at: string
@@ -252,6 +294,7 @@ export type Database = {
           title: string
         }
         Insert: {
+          content_embedding?: string | null
           content_html: string
           content_markdown?: string | null
           created_at?: string
@@ -269,6 +312,7 @@ export type Database = {
           title: string
         }
         Update: {
+          content_embedding?: string | null
           content_html?: string
           content_markdown?: string | null
           created_at?: string
@@ -484,6 +528,19 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      find_similar_posts: {
+        Args: {
+          p_embedding: string
+          p_limit?: number
+          p_site_connection_id: string
+          p_threshold?: number
+        }
+        Returns: {
+          id: string
+          similarity: number
+          title: string
+        }[]
       }
       get_site_credentials: {
         Args: { p_site_connection_id: string }

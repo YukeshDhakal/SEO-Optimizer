@@ -12,6 +12,7 @@ import { keys as observability } from "@repo/observability/keys";
 import { keys as security } from "@repo/security/keys";
 import { keys as webhooks } from "@repo/webhooks/keys";
 import { createEnv } from "@t3-oss/env-nextjs";
+import { z } from "zod";
 
 export const env = createEnv({
   skipValidation: process.env.SKIP_ENV_VALIDATION === "true",
@@ -30,7 +31,15 @@ export const env = createEnv({
     security(),
     webhooks(),
   ],
-  server: {},
+  server: {
+    // Phase 5: mirrors apps/api/env.ts — see the comment there. Same env
+    // var, declared per-app since this app's publish/generate actions also
+    // need `checkKillSwitch` to see it, and next-forge's env pattern is
+    // per-app throughout, not shared across apps.
+    EMERGENCY_STOP: z.enum(["true", "false"]).optional(),
+  },
   client: {},
-  runtimeEnv: {},
+  runtimeEnv: {
+    EMERGENCY_STOP: process.env.EMERGENCY_STOP,
+  },
 });

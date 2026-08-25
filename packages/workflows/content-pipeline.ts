@@ -8,7 +8,7 @@
 // restrictions (no fetch/Node modules) and what actually makes a crash
 // mid-pipeline resume at the unfinished step instead of restarting.
 import { createHook } from "workflow";
-import { validateGeoSeoOutput, type GeoSeoOutput, type PipelineStepName } from "@repo/ai-engine";
+import { validateGeoSeoOutput, type GeoSeoOutput } from "@repo/ai-engine";
 import {
   draftStep,
   geoSeoOptimizeStep,
@@ -28,7 +28,14 @@ import {
   recordStepFailed,
   recordStepStart,
   type CreateRunInput,
+  type ExtendedStepName,
 } from "./db-steps";
+import {
+  checkDuplicateContentStep,
+  checkKillSwitchStep,
+  checkRateLimitStep,
+  writeAuditLogStep,
+} from "./guardrail-steps";
 
 const MAX_DRAFT_ATTEMPTS = 3; // initial attempt + 2 retries — same as Phase 3
 
@@ -56,17 +63,10 @@ export async function contentPipelineWorkflow(
   const { runId } = await createPipelineRun(input);
   const settings = await getTenantSettings(input.organizationId);
 
-  if (settings.paused) {
-    // A deliberate stop, not a transient failure — retrying won't help
-    // until someone unpauses the tenant, so this isn't a `RetryableError`.
-    await markRunBlocked(runId, "tenant_settings.paused is true");
-    return { status: "blocked", runId, reason: "This organization's content generation is paused." };
-  }
-
   // Runs one step, bracketed by pipeline_run_steps bookkeeping — mirrors
   // Phase 3's `runStep` helper, just backed by real steps now.
   const runTrackedStep = async <T>(
-    name: PipelineStepName,
+    name: ExtendedStepName,
     fn: () => Promise<T>
   ): Promise<T> => {
     const { stepRowId } = await recordStepStart(runId, name);
@@ -80,6 +80,41 @@ export async function contentPipelineWorkflow(
       throw error;
     }
   };
+
+  // Guardrails (Phase 5), checked before any AI generation happens — cheap
+  // to check first, and the point of a kill switch/rate limit is not
+  // starting costed work, not stopping it partway through.
+  const killSwitch = await runTrackedStep("kill_switch_check", () =>
+    checkKillSwitchStep(input.organizationId, input.siteConnectionId)
+  );
+  if (killSwitch.blocked) {
+    await writeAuditLogStep({
+      organizationId: input.organizationId,
+      actor: input.createdBy,
+      action: "run.blocked.kill_switch",
+      entityType: "pipeline_run",
+      entityId: runId,
+      metadata: { reason: killSwitch.reason },
+    });
+    await markRunBlocked(runId, killSwitch.reason ?? "Blocked by kill switch.");
+    return { status: "blocked", runId, reason: killSwitch.reason };
+  }
+
+  const rateLimit = await runTrackedStep("rate_limit_check", () =>
+    checkRateLimitStep(input.organizationId)
+  );
+  if (rateLimit.blocked) {
+    await writeAuditLogStep({
+      organizationId: input.organizationId,
+      actor: input.createdBy,
+      action: "run.blocked.rate_limit",
+      entityType: "pipeline_run",
+      entityId: runId,
+      metadata: { reason: rateLimit.reason },
+    });
+    await markRunBlocked(runId, rateLimit.reason ?? "Blocked by rate limit.");
+    return { status: "blocked", runId, reason: rateLimit.reason };
+  }
 
   const topic = await runTrackedStep("topic_selection", () =>
     topicSelectionStep({ organizationId: input.organizationId, topicHint: input.topicHint })
@@ -167,6 +202,34 @@ export async function contentPipelineWorkflow(
   const policy = await runTrackedStep("policy_check", () => policyCheckStep(draftMarkdown));
   if (policy.blocked) {
     const reason = policy.reasons.join("; ");
+    await writeAuditLogStep({
+      organizationId: input.organizationId,
+      actor: input.createdBy,
+      action: "run.blocked.policy_check",
+      entityType: "pipeline_run",
+      entityId: runId,
+      metadata: { reason },
+    });
+    await markRunBlocked(runId, reason);
+    return { status: "blocked", runId, reason };
+  }
+
+  // Duplicate-content check: a hard blocker, same spirit as
+  // `geo_seo_optimize` — best-effort though (skips rather than blocks) when
+  // no embedding provider is configured, see `guardrails.ts`.
+  const duplicate = await runTrackedStep("duplicate_check", () =>
+    checkDuplicateContentStep(input.siteConnectionId, draftMarkdown)
+  );
+  if (duplicate.duplicate) {
+    const reason = duplicate.reason ?? "Too similar to an existing post.";
+    await writeAuditLogStep({
+      organizationId: input.organizationId,
+      actor: input.createdBy,
+      action: "run.blocked.duplicate_content",
+      entityType: "pipeline_run",
+      entityId: runId,
+      metadata: { reason, similarity: duplicate.similarity },
+    });
     await markRunBlocked(runId, reason);
     return { status: "blocked", runId, reason };
   }
@@ -183,10 +246,44 @@ export async function contentPipelineWorkflow(
 
     if (!decision.approved) {
       await recordStepComplete(stepRowId, decision);
+      await writeAuditLogStep({
+        organizationId: input.organizationId,
+        actor: input.createdBy,
+        action: "approval.rejected",
+        entityType: "pipeline_run",
+        entityId: runId,
+      });
       await markRunRejected(runId, "rejected at approval_gate");
       return { status: "rejected", runId, reason: "Rejected by an approver." };
     }
     await recordStepComplete(stepRowId, decision);
+    await writeAuditLogStep({
+      organizationId: input.organizationId,
+      actor: input.createdBy,
+      action: "approval.granted",
+      entityType: "pipeline_run",
+      entityId: runId,
+    });
+  }
+
+  // Re-check the kill switch one more time immediately before committing
+  // the draft — closes the race where a tenant/site gets paused (or the
+  // emergency stop flips) sometime during this run's several-minute AI
+  // generation, after the first check at the top already passed.
+  const killSwitchBeforeFinalize = await runTrackedStep("kill_switch_check", () =>
+    checkKillSwitchStep(input.organizationId, input.siteConnectionId)
+  );
+  if (killSwitchBeforeFinalize.blocked) {
+    await writeAuditLogStep({
+      organizationId: input.organizationId,
+      actor: input.createdBy,
+      action: "run.blocked.kill_switch",
+      entityType: "pipeline_run",
+      entityId: runId,
+      metadata: { reason: killSwitchBeforeFinalize.reason, stage: "pre_finalize" },
+    });
+    await markRunBlocked(runId, killSwitchBeforeFinalize.reason ?? "Blocked by kill switch.");
+    return { status: "blocked", runId, reason: killSwitchBeforeFinalize.reason };
   }
 
   const { postId } = await finalizeRunSucceeded({
@@ -199,6 +296,15 @@ export async function contentPipelineWorkflow(
     contentMarkdown: draftMarkdown,
     metaTitle: draftMeta.metaTitle,
     metaDescription: draftMeta.metaDescription,
+  });
+
+  await writeAuditLogStep({
+    organizationId: input.organizationId,
+    actor: input.createdBy,
+    action: "post.drafted",
+    entityType: "post",
+    entityId: postId,
+    metadata: { pipelineRunId: runId },
   });
 
   return { status: "succeeded", runId, postId };

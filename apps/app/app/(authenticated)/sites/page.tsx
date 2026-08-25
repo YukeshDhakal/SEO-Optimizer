@@ -97,7 +97,11 @@ const SitesPage = async () => {
                 </TableCell>
                 {canManage && (
                   <TableCell className="text-right">
-                    <PauseToggleButton id={site.id} paused={site.paused} />
+                    <PauseToggleButton
+                      id={site.id}
+                      organizationId={organization.id}
+                      paused={site.paused}
+                    />
                   </TableCell>
                 )}
               </TableRow>

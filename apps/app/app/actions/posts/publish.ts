@@ -2,6 +2,7 @@
 
 import { createClient } from "@repo/auth/server";
 import { getCmsAdapter } from "@repo/cms-adapters";
+import { checkKillSwitch, writeAuditLog } from "@repo/workflows";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentOrganization } from "../../lib/organization";
@@ -84,6 +85,24 @@ export const publishPost = async (
     };
   }
 
+  // Re-checked immediately before the real publish call, not just at the
+  // top of this action — closes the race where a tenant/site gets paused
+  // (or the emergency stop flips) between when this form was rendered and
+  // when its submit actually runs.
+  const killSwitch = await checkKillSwitch(organization.id, siteConnectionId);
+  if (killSwitch.blocked) {
+    await supabase.from("posts").update({ status: "failed" }).eq("id", draft.id);
+    await writeAuditLog({
+      organizationId: organization.id,
+      actor: user.id,
+      action: "publish.blocked.kill_switch",
+      entityType: "post",
+      entityId: draft.id,
+      metadata: { reason: killSwitch.reason, siteConnectionId },
+    });
+    return { error: killSwitch.reason ?? "Publishing is currently paused." };
+  }
+
   let credentials: Record<string, string> | null = null;
   if (site.cms_type !== "hosted_blog") {
     const { data: secret } = await supabase.rpc("get_site_credentials", {
@@ -117,12 +136,24 @@ export const publishPost = async (
       .from("site_connections")
       .update({ consecutive_publish_failures: 0 })
       .eq("id", siteConnectionId);
+
+    await writeAuditLog({
+      organizationId: organization.id,
+      actor: user.id,
+      action: "post.published",
+      entityType: "post",
+      entityId: draft.id,
+      metadata: { siteConnectionId, publishedUrl: result.publishedUrl },
+    });
   } catch (error) {
     await supabase
       .from("posts")
       .update({ status: "failed" })
       .eq("id", draft.id);
 
+    // The trigger on site_connections (auto_pause_site_on_repeated_failures)
+    // flips `paused` itself once this update crosses 3 - nothing else here
+    // needs to check the threshold.
     await supabase
       .from("site_connections")
       .update({
@@ -130,10 +161,29 @@ export const publishPost = async (
       })
       .eq("id", siteConnectionId);
 
-    return {
-      error:
-        error instanceof Error ? error.message : "Publishing failed.",
-    };
+    const message = error instanceof Error ? error.message : "Publishing failed.";
+
+    await writeAuditLog({
+      organizationId: organization.id,
+      actor: user.id,
+      action: "post.publish_failed",
+      entityType: "post",
+      entityId: draft.id,
+      metadata: { siteConnectionId, error: message },
+    });
+
+    if (site.consecutive_publish_failures + 1 >= 3) {
+      await writeAuditLog({
+        organizationId: organization.id,
+        actor: null,
+        action: "site.auto_paused",
+        entityType: "site_connection",
+        entityId: siteConnectionId,
+        metadata: { consecutiveFailures: site.consecutive_publish_failures + 1 },
+      });
+    }
+
+    return { error: message };
   }
 
   revalidatePath(`/sites/${siteConnectionId}`);

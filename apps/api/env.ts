@@ -26,9 +26,18 @@ export const env = createEnv({
     // workflow runs — worth gating even though this app has no other
     // unauthenticated-by-design cron route to match convention against.
     CRON_SECRET: z.string().min(1).optional(),
+    // Phase 5: platform-wide safety valve, off by default. Read directly
+    // via `process.env.EMERGENCY_STOP` at the call sites that actually
+    // check it (`@repo/workflows`' `checkKillSwitch`, this app's dispatcher
+    // route) rather than through this typed `env` object — it needs to
+    // keep working even if something about env validation itself is what's
+    // broken. Declared here anyway so it shows up in this app's env schema
+    // for discoverability/`.env.example` generation.
+    EMERGENCY_STOP: z.enum(["true", "false"]).optional(),
   },
   client: {},
   runtimeEnv: {
     CRON_SECRET: process.env.CRON_SECRET,
+    EMERGENCY_STOP: process.env.EMERGENCY_STOP,
   },
 });

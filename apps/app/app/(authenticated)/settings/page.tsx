@@ -9,6 +9,7 @@ import {
 import { Input } from "@repo/design-system/components/ui/input";
 import { Label } from "@repo/design-system/components/ui/label";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { updateTenantSettings } from "../../actions/tenant-settings/mutate";
 import { getCurrentOrganization } from "../../lib/organization";
@@ -35,9 +36,14 @@ const SettingsPage = async () => {
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4">
-      <div>
-        <h1 className="font-semibold text-2xl">Settings</h1>
-        <p className="text-muted-foreground text-sm">{organization.name}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-semibold text-2xl">Settings</h1>
+          <p className="text-muted-foreground text-sm">{organization.name}</p>
+        </div>
+        <Button asChild size="sm" variant="outline">
+          <Link href="/settings/audit">Audit log</Link>
+        </Button>
       </div>
 
       <Card>

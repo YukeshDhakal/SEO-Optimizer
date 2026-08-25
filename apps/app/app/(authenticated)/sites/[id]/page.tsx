@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentOrganization } from "../../../lib/organization";
+import { PauseToggleButton } from "../pause-toggle-button";
 import { ConnectWordPressForm } from "./connect-wordpress-form";
 import { DeleteSiteButton } from "./delete-site-button";
 import { EditSiteForm } from "./edit-site-form";
@@ -76,6 +77,29 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
           )}
         </div>
       </div>
+
+      {site.paused && site.consecutive_publish_failures >= 3 && (
+        // The only path that currently sets `paused=true` at 3+ failures
+        // is the `auto_pause_site_on_repeated_failures` DB trigger — a
+        // manual pause via the toggle below resets the failure count to 0,
+        // so this combination reliably means "auto-paused", not "an admin
+        // chose to pause this."
+        <div className="flex items-center justify-between gap-4 rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm">
+          <p>
+            <strong>Automatically paused</strong> after{" "}
+            {site.consecutive_publish_failures} consecutive publish
+            failures. Fix the underlying issue (check credentials/site
+            reachability), then resume.
+          </p>
+          {canManage && (
+            <PauseToggleButton
+              id={site.id}
+              organizationId={organization.id}
+              paused={site.paused}
+            />
+          )}
+        </div>
+      )}
 
       <dl className="grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
         <div>

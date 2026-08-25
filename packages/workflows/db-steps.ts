@@ -68,9 +68,22 @@ export const getTenantSettings = async (
   };
 };
 
+// Phase 5 guardrail checks (kill_switch_check/rate_limit_check/
+// duplicate_check) get recorded through this same bookkeeping as the
+// original pipeline steps - `pipeline_run_steps.step_name` is a plain
+// `text` column, no CHECK constraint, so widening this union is the only
+// change needed to make them show up in the run detail UI identically to
+// every other step.
+export type ExtendedStepName =
+  | PipelineStepName
+  | "approval_gate"
+  | "kill_switch_check"
+  | "rate_limit_check"
+  | "duplicate_check";
+
 export const recordStepStart = async (
   runId: string,
-  stepName: PipelineStepName | "approval_gate"
+  stepName: ExtendedStepName
 ): Promise<{ stepRowId: string | null }> => {
   "use step";
 

@@ -1,5 +1,5 @@
 import { database } from "@repo/database";
-import { computeNextRunAt, contentPipelineWorkflow } from "@repo/workflows";
+import { checkRateLimit, computeNextRunAt, contentPipelineWorkflow, writeAuditLog } from "@repo/workflows";
 import { start } from "workflow/api";
 import { env } from "@/env";
 
@@ -29,9 +29,19 @@ interface DueScheduleRow {
 // site level, starts a durable workflow run for the rest, and advances
 // `next_run_at`. Billing/quota gating (usage_counters/subscriptions) is
 // Phase 6 — deliberately not checked here yet, see the TODO below.
+// Same env var `content-pipeline.ts`'s `checkKillSwitch` step reads inside
+// the workflow — checked again here too so a fleet of paused/stopped
+// schedules doesn't even attempt `start()` in the first place, rather than
+// starting a workflow run just to have it immediately block itself.
+const isEmergencyStopped = () => process.env.EMERGENCY_STOP === "true";
+
 export const GET = async (request: Request) => {
   if (!isAuthorized(request)) {
     return new Response("Unauthorized", { status: 401 });
+  }
+
+  if (isEmergencyStopped()) {
+    return Response.json({ checked: 0, results: [], skipped: "emergency_stop" });
   }
 
   const now = new Date();
@@ -65,12 +75,38 @@ export const GET = async (request: Request) => {
     // indicate quota is exhausted or billing is past_due — neither table
     // exists yet, so there's nothing to check here yet.
     if (tenantPaused || sitePaused) {
-      results.push({
-        scheduleId: schedule.id,
-        action: tenantPaused ? "skipped:tenant_paused" : "skipped:site_paused",
+      const action = tenantPaused ? "skipped:tenant_paused" : "skipped:site_paused";
+      results.push({ scheduleId: schedule.id, action });
+      await writeAuditLog({
+        organizationId: schedule.organization_id,
+        actor: null,
+        action: `schedule.${action}`,
+        entityType: "schedule",
+        entityId: schedule.id,
       });
       // Still advance next_run_at — a paused schedule shouldn't build up a
       // backlog of "due" runs that all fire the moment it's unpaused.
+      await database
+        .from("schedules")
+        .update({ next_run_at: computeNextRunAt(schedule.cadence, schedule.timezone, now).toISOString() })
+        .eq("id", schedule.id);
+      continue;
+    }
+
+    const rateLimit = await checkRateLimit(schedule.organization_id);
+    if (rateLimit.blocked) {
+      results.push({ scheduleId: schedule.id, action: "skipped:rate_limited" });
+      await writeAuditLog({
+        organizationId: schedule.organization_id,
+        actor: null,
+        action: "schedule.skipped.rate_limited",
+        entityType: "schedule",
+        entityId: schedule.id,
+        metadata: { reason: rateLimit.reason },
+      });
+      // Same reasoning as the pause branch above — advance next_run_at
+      // regardless, so quota headroom next period doesn't have to absorb a
+      // backlog of runs this period's limit blocked.
       await database
         .from("schedules")
         .update({ next_run_at: computeNextRunAt(schedule.cadence, schedule.timezone, now).toISOString() })

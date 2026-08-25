@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Unit-tests the dispatcher's app-level branching (skip when paused at the
 // tenant or site level, still advance next_run_at either way, start a
@@ -30,6 +30,12 @@ const state = vi.hoisted(() => {
       Promise.resolve({ returnValue: Promise.resolve({}) })
     ),
     computeNextRunAtMock: vi.fn(() => new Date("2026-01-01T00:00:00.000Z")),
+    // Phase 5: `checkRateLimit`/`writeAuditLog` come from `@repo/workflows`
+    // just like `computeNextRunAt` — mocked at that boundary rather than
+    // re-deriving their own DB-query behavior here, which
+    // `guardrails.test.ts` already covers directly.
+    checkRateLimitMock: vi.fn(() => Promise.resolve({ blocked: false })),
+    writeAuditLogMock: vi.fn(() => Promise.resolve()),
     dueSchedules: [] as FixtureSchedule[],
     tenantPausedByOrg: {} as Record<string, boolean>,
     scheduleUpdates: [] as Array<{ id: string }>,
@@ -46,6 +52,8 @@ vi.mock("workflow/api", () => ({ start: state.startMock }));
 vi.mock("@repo/workflows", () => ({
   contentPipelineWorkflow: {},
   computeNextRunAt: state.computeNextRunAtMock,
+  checkRateLimit: state.checkRateLimitMock,
+  writeAuditLog: state.writeAuditLogMock,
 }));
 
 vi.mock("@repo/database", () => {
@@ -96,11 +104,23 @@ const schedule = (overrides: Partial<(typeof state.dueSchedules)[number]>) => ({
   ...overrides,
 });
 
+const originalEmergencyStop = process.env.EMERGENCY_STOP;
+
 beforeEach(() => {
   vi.clearAllMocks();
   state.dueSchedules = [];
   state.tenantPausedByOrg = {};
   state.scheduleUpdates.length = 0;
+  state.checkRateLimitMock.mockResolvedValue({ blocked: false });
+  delete process.env.EMERGENCY_STOP;
+});
+
+afterEach(() => {
+  if (originalEmergencyStop === undefined) {
+    delete process.env.EMERGENCY_STOP;
+  } else {
+    process.env.EMERGENCY_STOP = originalEmergencyStop;
+  }
 });
 
 describe("dispatch-runs cron route", () => {
@@ -158,5 +178,34 @@ describe("dispatch-runs cron route", () => {
       { scheduleId: "sched-a", action: "started" },
       { scheduleId: "sched-b", action: "skipped:tenant_paused" },
     ]);
+  });
+
+  it("short-circuits entirely when EMERGENCY_STOP is set, without querying schedules at all", async () => {
+    process.env.EMERGENCY_STOP = "true";
+    state.dueSchedules = [schedule({})]; // present but must never be reached
+
+    const response = await GET(new Request("https://example.com/cron/dispatch-runs"));
+    const body = await response.json();
+
+    expect(state.startMock).not.toHaveBeenCalled();
+    expect(body.checked).toBe(0);
+    expect(body.skipped).toBe("emergency_stop");
+  });
+
+  it("skips a schedule that would exceed its organization's rate limit, but still advances next_run_at", async () => {
+    state.dueSchedules = [schedule({})];
+    state.checkRateLimitMock.mockResolvedValue({
+      blocked: true,
+      reason: "Daily post limit reached (5/day).",
+    });
+
+    const response = await GET(new Request("https://example.com/cron/dispatch-runs"));
+    const body = await response.json();
+
+    expect(state.startMock).not.toHaveBeenCalled();
+    expect(body.results).toEqual([
+      { scheduleId: "sched-1", action: "skipped:rate_limited" },
+    ]);
+    expect(state.scheduleUpdates).toEqual([{ id: "sched-1" }]);
   });
 });

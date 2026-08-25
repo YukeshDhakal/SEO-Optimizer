@@ -1,4 +1,5 @@
 export { getModel, getSearchTool } from "./model";
+export { generateEmbedding } from "./embedding";
 export { runPolicyCheck } from "./policy-check";
 export type { PolicyCheckResult } from "./policy-check";
 export {

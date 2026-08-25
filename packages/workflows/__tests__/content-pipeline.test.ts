@@ -30,6 +30,11 @@ vi.mock("@repo/ai-engine", async () => {
     geoSeoOptimize: vi.fn(),
     runPolicyCheck: vi.fn(),
     validateGeoSeoOutput,
+    // Phase 5's `guardrails.ts` imports this for the duplicate-content
+    // check — defaulting to `undefined` (not `null`) still exercises the
+    // same "not configured, skip" branch (`!embedding` is true either way)
+    // without every existing test needing to know this guardrail exists.
+    generateEmbedding: vi.fn(),
   };
 });
 
@@ -61,7 +66,14 @@ const makeBuilder = () => {
 };
 
 vi.mock("@repo/database", () => ({
-  database: { from: vi.fn(() => makeBuilder()) },
+  database: {
+    from: vi.fn(() => makeBuilder()),
+    // Only reached by `checkDuplicateContent` when `generateEmbedding`
+    // returns a real embedding — every test here leaves it `undefined`
+    // (see the `@repo/ai-engine` mock above), so this never actually gets
+    // called; present so nothing throws if that assumption ever changes.
+    rpc: vi.fn(() => Promise.resolve({ data: [], error: null })),
+  },
 }));
 
 // Imported after the mocks above so both pick up the mocked modules.
