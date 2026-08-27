@@ -6,6 +6,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentOrganization } from "../../../lib/organization";
 import { PauseToggleButton } from "../pause-toggle-button";
+import { ConnectSearchConsoleForm } from "./connect-search-console-form";
 import { ConnectShopifyForm } from "./connect-shopify-form";
 import { ConnectWebflowForm } from "./connect-webflow-form";
 import { ConnectWordPressForm } from "./connect-wordpress-form";
@@ -42,6 +43,19 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
   if (!site) {
     notFound();
   }
+
+  const { data: searchConsoleCredentials } = await supabase
+    .from("search_console_credentials")
+    .select("status, gsc_site_url")
+    .eq("site_connection_id", site.id)
+    .maybeSingle();
+
+  const { data: topGscQueries } = await supabase
+    .from("search_console_queries")
+    .select("query, clicks")
+    .eq("site_connection_id", site.id)
+    .order("clicks", { ascending: false })
+    .limit(5);
 
   const canManage =
     organization.role === "owner" || organization.role === "admin";
@@ -128,6 +142,18 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
           {site.cms_type === "webflow" && (
             <ConnectWebflowForm siteConnectionId={site.id} />
           )}
+          <ConnectSearchConsoleForm
+            credentials={
+              searchConsoleCredentials
+                ? {
+                    status: searchConsoleCredentials.status as "pending" | "connected" | "error",
+                    gscSiteUrl: searchConsoleCredentials.gsc_site_url,
+                  }
+                : null
+            }
+            siteConnectionId={site.id}
+            topQueries={topGscQueries ?? []}
+          />
           <EditSiteForm site={site} />
           <DeleteSiteButton id={site.id} />
         </div>

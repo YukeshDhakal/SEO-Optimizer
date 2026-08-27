@@ -55,7 +55,7 @@ const makeBuilder = () => {
   const row = { id: "row-id", ...tenantSettingsOverride };
   const result = { data: row, error: null };
   const builder: Record<string, unknown> = {};
-  for (const method of ["insert", "update", "select", "eq", "order"]) {
+  for (const method of ["insert", "update", "select", "eq", "order", "limit"]) {
     builder[method] = vi.fn(() => builder);
   }
   builder.single = vi.fn(() => Promise.resolve(result));
@@ -85,6 +85,7 @@ import {
   selectTopic,
   outline,
 } from "@repo/ai-engine";
+import { database } from "@repo/database";
 import { contentPipelineWorkflow } from "../content-pipeline";
 
 const selectTopicMock = vi.mocked(selectTopic);
@@ -150,6 +151,28 @@ describe("contentPipelineWorkflow retry loop", () => {
     expect(draftMock).toHaveBeenCalledTimes(1);
     expect(geoSeoOptimizeMock).toHaveBeenCalledTimes(1);
     expect(draftMock.mock.calls[0][0].feedback).toBeUndefined();
+  });
+
+  // Phase 7: topicSelectionStep (not mocked here — only @repo/ai-engine's
+  // selectTopic is) reads search_console_queries for the run's own
+  // siteConnectionId before calling selectTopic.
+  it("looks up search_console_queries scoped to the run's siteConnectionId before selecting a topic", async () => {
+    geoSeoOptimizeMock.mockResolvedValueOnce(VALID_GEO_SEO);
+
+    await contentPipelineWorkflow(BASE_INPUT);
+
+    const fromMock = vi.mocked(database.from);
+    const queriesCallIndex = fromMock.mock.calls.findIndex(
+      (call) => call[0] === "search_console_queries"
+    );
+    expect(queriesCallIndex).toBeGreaterThanOrEqual(0);
+
+    const queriesBuilder = fromMock.mock.results[queriesCallIndex].value;
+    expect(queriesBuilder.eq).toHaveBeenCalledWith("site_connection_id", "site-1");
+
+    expect(selectTopicMock).toHaveBeenCalledWith(
+      expect.objectContaining({ organizationId: "org-1", topicHint: "coffee gear" })
+    );
   });
 
   it("retries draft with corrective feedback when validation fails once, then succeeds", async () => {

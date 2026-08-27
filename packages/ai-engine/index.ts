@@ -22,7 +22,7 @@ export type { ValidationResult } from "./validation";
 // `runContentPipeline` keeps importing these directly too (unaffected,
 // still the plain-function path its unit tests exercise).
 export { selectTopic } from "./steps/topic-selection";
-export type { TopicSelectionInput } from "./steps/topic-selection";
+export type { TopicSelectionInput, TopicSelectionQuery } from "./steps/topic-selection";
 export { research } from "./steps/research";
 export type { ResearchInput } from "./steps/research";
 export { outline } from "./steps/outline";

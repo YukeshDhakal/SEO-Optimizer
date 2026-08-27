@@ -20,6 +20,7 @@
     "@repo/next-config": "*",
     "@repo/observability": "*",
     "@repo/payments": "*",
+    "@repo/search-console": "*",
     "@repo/workflows": "*",
     "@sentry/nextjs": "^10.42.0",
     "@t3-oss/env-nextjs": "^0.13.10",

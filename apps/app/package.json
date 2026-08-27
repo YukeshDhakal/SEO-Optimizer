@@ -23,6 +23,7 @@
     "@repo/notifications": "*",
     "@repo/observability": "*",
     "@repo/payments": "*",
+    "@repo/search-console": "*",
     "@repo/security": "*",
     "@repo/seo": "*",
     "@repo/webhooks": "*",

@@ -435,6 +435,88 @@ export type Database = {
           },
         ]
       }
+      search_console_credentials: {
+        Row: {
+          created_at: string
+          gsc_site_url: string | null
+          id: string
+          secret_ref: string | null
+          site_connection_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          gsc_site_url?: string | null
+          id?: string
+          secret_ref?: string | null
+          site_connection_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          gsc_site_url?: string | null
+          id?: string
+          secret_ref?: string | null
+          site_connection_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "search_console_credentials_site_connection_id_fkey"
+            columns: ["site_connection_id"]
+            isOneToOne: true
+            referencedRelation: "site_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      search_console_queries: {
+        Row: {
+          clicks: number
+          ctr: number
+          fetched_at: string
+          id: string
+          impressions: number
+          period_end: string
+          period_start: string
+          position: number
+          query: string
+          site_connection_id: string
+        }
+        Insert: {
+          clicks?: number
+          ctr?: number
+          fetched_at?: string
+          id?: string
+          impressions?: number
+          period_end: string
+          period_start: string
+          position?: number
+          query: string
+          site_connection_id: string
+        }
+        Update: {
+          clicks?: number
+          ctr?: number
+          fetched_at?: string
+          id?: string
+          impressions?: number
+          period_end?: string
+          period_start?: string
+          position?: number
+          query?: string
+          site_connection_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "search_console_queries_site_connection_id_fkey"
+            columns: ["site_connection_id"]
+            isOneToOne: false
+            referencedRelation: "site_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_connections: {
         Row: {
           base_url: string | null
@@ -641,6 +723,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      delete_search_console_credentials: {
+        Args: { p_site_connection_id: string }
+        Returns: undefined
+      }
       find_similar_posts: {
         Args: {
           p_embedding: string
@@ -653,6 +739,14 @@ export type Database = {
           similarity: number
           title: string
         }[]
+      }
+      get_search_console_credentials: {
+        Args: { p_site_connection_id: string }
+        Returns: Json
+      }
+      get_search_console_credentials_for_sync: {
+        Args: { p_site_connection_id: string }
+        Returns: Json
       }
       get_site_credentials: {
         Args: { p_site_connection_id: string }
@@ -672,7 +766,19 @@ export type Database = {
         Args: { target_run_id: string }
         Returns: boolean
       }
+      is_org_member_for_site: {
+        Args: { target_site_id: string }
+        Returns: boolean
+      }
       is_org_owner: { Args: { target_org_id: string }; Returns: boolean }
+      set_search_console_credentials: {
+        Args: { p_secret: Json; p_site_connection_id: string }
+        Returns: string
+      }
+      set_search_console_credentials_for_sync: {
+        Args: { p_secret: Json; p_site_connection_id: string }
+        Returns: string
+      }
       set_site_credentials: {
         Args: { p_secret: Json; p_site_connection_id: string }
         Returns: string

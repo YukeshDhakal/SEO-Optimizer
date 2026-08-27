@@ -10,6 +10,10 @@
     {
       "path": "/cron/dispatch-runs",
       "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/cron/sync-search-console",
+      "schedule": "0 3 * * *"
     }
   ]
 }

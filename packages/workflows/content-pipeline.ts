@@ -138,7 +138,11 @@ export async function contentPipelineWorkflow(
   }
 
   const topic = await runTrackedStep("topic_selection", () =>
-    topicSelectionStep({ organizationId: input.organizationId, topicHint: input.topicHint })
+    topicSelectionStep({
+      organizationId: input.organizationId,
+      topicHint: input.topicHint,
+      siteConnectionId: input.siteConnectionId,
+    })
   );
 
   const researchResult = await runTrackedStep("research", () =>
