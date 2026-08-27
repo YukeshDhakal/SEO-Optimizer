@@ -19,3 +19,8 @@ export type {
   KillSwitchResult,
   RateLimitResult,
 } from "./guardrails";
+
+// Phase 6 billing - same "plain functions for direct server-action/route-
+// handler use" reasoning as the guardrails re-export above.
+export { checkQuota, currentPeriodBounds, incrementUsage } from "./billing";
+export type { QuotaCheckResult } from "./billing";

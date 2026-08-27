@@ -1,7 +1,3 @@
-// Generated via the Supabase MCP `generate_typescript_types` tool against
-// project `acyauqpeykgrivrajksa` (seo-geo-agent). Regenerate after any
-// schema migration — do not hand-edit.
-
 export type Json =
   | string
   | number
@@ -274,6 +270,39 @@ export type Database = {
           },
         ]
       }
+      plans: {
+        Row: {
+          ai_token_soft_cap: number | null
+          created_at: string
+          features: Json
+          id: string
+          monthly_post_quota: number
+          name: string
+          seats: number
+          stripe_price_id: string | null
+        }
+        Insert: {
+          ai_token_soft_cap?: number | null
+          created_at?: string
+          features?: Json
+          id?: string
+          monthly_post_quota: number
+          name: string
+          seats?: number
+          stripe_price_id?: string | null
+        }
+        Update: {
+          ai_token_soft_cap?: number | null
+          created_at?: string
+          features?: Json
+          id?: string
+          monthly_post_quota?: number
+          name?: string
+          seats?: number
+          stripe_price_id?: string | null
+        }
+        Relationships: []
+      }
       posts: {
         Row: {
           content_embedding: string | null
@@ -450,6 +479,48 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          current_period_end: string | null
+          organization_id: string
+          plan_id: string | null
+          status: string
+          stripe_subscription_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          current_period_end?: string | null
+          organization_id: string
+          plan_id?: string | null
+          status?: string
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          current_period_end?: string | null
+          organization_id?: string
+          plan_id?: string | null
+          status?: string
+          stripe_subscription_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tenant_settings: {
         Row: {
           content_policy: Json
@@ -483,6 +554,47 @@ export type Database = {
             foreignKeyName: "tenant_settings_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      usage_counters: {
+        Row: {
+          ai_cost_usd: number
+          ai_tokens_used: number
+          created_at: string
+          id: string
+          organization_id: string
+          period_end: string
+          period_start: string
+          posts_generated: number
+        }
+        Insert: {
+          ai_cost_usd?: number
+          ai_tokens_used?: number
+          created_at?: string
+          id?: string
+          organization_id: string
+          period_end: string
+          period_start: string
+          posts_generated?: number
+        }
+        Update: {
+          ai_cost_usd?: number
+          ai_tokens_used?: number
+          created_at?: string
+          id?: string
+          organization_id?: string
+          period_end?: string
+          period_start?: string
+          posts_generated?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_counters_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
           },

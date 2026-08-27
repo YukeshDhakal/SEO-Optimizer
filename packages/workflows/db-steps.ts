@@ -79,7 +79,8 @@ export type ExtendedStepName =
   | "approval_gate"
   | "kill_switch_check"
   | "rate_limit_check"
-  | "duplicate_check";
+  | "duplicate_check"
+  | "quota_check";
 
 export const recordStepStart = async (
   runId: string,

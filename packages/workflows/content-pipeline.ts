@@ -36,6 +36,7 @@ import {
   checkRateLimitStep,
   writeAuditLogStep,
 } from "./guardrail-steps";
+import { checkQuotaStep, incrementUsageStep } from "./billing-steps";
 
 const MAX_DRAFT_ATTEMPTS = 3; // initial attempt + 2 retries — same as Phase 3
 
@@ -114,6 +115,26 @@ export async function contentPipelineWorkflow(
     });
     await markRunBlocked(runId, rateLimit.reason ?? "Blocked by rate limit.");
     return { status: "blocked", runId, reason: rateLimit.reason };
+  }
+
+  // Phase 6: monthly post quota, checked alongside the Phase 5 guardrails
+  // above and for the same reason - refuse before spending any AI cost,
+  // not after. Applies uniformly to manual and scheduled runs (unlike
+  // organizations.status = 'past_due', which the cron dispatcher alone
+  // enforces - see its own comment for why that one stays scoped to
+  // autonomous runs only).
+  const quota = await runTrackedStep("quota_check", () => checkQuotaStep(input.organizationId));
+  if (quota.blocked) {
+    await writeAuditLogStep({
+      organizationId: input.organizationId,
+      actor: input.createdBy,
+      action: "run.blocked.quota",
+      entityType: "pipeline_run",
+      entityId: runId,
+      metadata: { reason: quota.reason },
+    });
+    await markRunBlocked(runId, quota.reason ?? "Blocked by quota.");
+    return { status: "blocked", runId, reason: quota.reason };
   }
 
   const topic = await runTrackedStep("topic_selection", () =>
@@ -306,6 +327,11 @@ export async function contentPipelineWorkflow(
     entityId: postId,
     metadata: { pipelineRunId: runId },
   });
+
+  // Phase 6: meter the completed run against the org's current billing
+  // period, after the run has actually succeeded - a blocked/failed run
+  // never reaches here and correctly doesn't count against quota.
+  await incrementUsageStep(input.organizationId);
 
   return { status: "succeeded", runId, postId };
 }

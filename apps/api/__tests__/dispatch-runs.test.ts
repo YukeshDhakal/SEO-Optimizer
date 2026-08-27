@@ -23,6 +23,7 @@ const state = vi.hoisted(() => {
     topic_hint: string;
     created_by: string;
     site_connections: { paused: boolean } | null;
+    organizations: { status: string } | null;
   }
 
   return {
@@ -34,7 +35,21 @@ const state = vi.hoisted(() => {
     // just like `computeNextRunAt` — mocked at that boundary rather than
     // re-deriving their own DB-query behavior here, which
     // `guardrails.test.ts` already covers directly.
-    checkRateLimitMock: vi.fn(() => Promise.resolve({ blocked: false })),
+    // Explicit return-type annotations (not just inferred from the initial
+    // `{ blocked: false }` literal) so `mockResolvedValue({ blocked: true,
+    // reason: "..." })` in the tests below type-checks — otherwise TS
+    // narrows the mock's type to exactly `{ blocked: boolean }` with no
+    // `reason` property at all, and an object literal with an "excess"
+    // property fails to satisfy it.
+    checkRateLimitMock: vi.fn(
+      (): Promise<{ blocked: boolean; reason?: string }> => Promise.resolve({ blocked: false })
+    ),
+    // Phase 6: same reasoning — `billing.test.ts` covers `checkQuota`'s own
+    // DB-query logic directly, this file only needs to exercise the
+    // dispatcher's branching around whatever it returns.
+    checkQuotaMock: vi.fn(
+      (): Promise<{ blocked: boolean; reason?: string }> => Promise.resolve({ blocked: false })
+    ),
     writeAuditLogMock: vi.fn(() => Promise.resolve()),
     dueSchedules: [] as FixtureSchedule[],
     tenantPausedByOrg: {} as Record<string, boolean>,
@@ -53,6 +68,7 @@ vi.mock("@repo/workflows", () => ({
   contentPipelineWorkflow: {},
   computeNextRunAt: state.computeNextRunAtMock,
   checkRateLimit: state.checkRateLimitMock,
+  checkQuota: state.checkQuotaMock,
   writeAuditLog: state.writeAuditLogMock,
 }));
 
@@ -101,6 +117,7 @@ const schedule = (overrides: Partial<(typeof state.dueSchedules)[number]>) => ({
   topic_hint: "coffee gear",
   created_by: "user-1",
   site_connections: { paused: false },
+  organizations: { status: "active" },
   ...overrides,
 });
 
@@ -112,6 +129,7 @@ beforeEach(() => {
   state.tenantPausedByOrg = {};
   state.scheduleUpdates.length = 0;
   state.checkRateLimitMock.mockResolvedValue({ blocked: false });
+  state.checkQuotaMock.mockResolvedValue({ blocked: false });
   delete process.env.EMERGENCY_STOP;
 });
 
@@ -205,6 +223,59 @@ describe("dispatch-runs cron route", () => {
     expect(state.startMock).not.toHaveBeenCalled();
     expect(body.results).toEqual([
       { scheduleId: "sched-1", action: "skipped:rate_limited" },
+    ]);
+    expect(state.scheduleUpdates).toEqual([{ id: "sched-1" }]);
+  });
+
+  it("skips a schedule whose organization is past_due, before even checking tenant_settings", async () => {
+    state.dueSchedules = [schedule({ organizations: { status: "past_due" } })];
+    state.tenantPausedByOrg["org-1"] = false;
+
+    const response = await GET(new Request("https://example.com/cron/dispatch-runs"));
+    const body = await response.json();
+
+    expect(state.startMock).not.toHaveBeenCalled();
+    expect(body.results).toEqual([
+      { scheduleId: "sched-1", action: "skipped:billing_past_due" },
+    ]);
+    expect(state.scheduleUpdates).toEqual([{ id: "sched-1" }]);
+  });
+
+  it("skips a schedule whose organization is suspended", async () => {
+    state.dueSchedules = [schedule({ organizations: { status: "suspended" } })];
+
+    const response = await GET(new Request("https://example.com/cron/dispatch-runs"));
+    const body = await response.json();
+
+    expect(state.startMock).not.toHaveBeenCalled();
+    expect(body.results).toEqual([
+      { scheduleId: "sched-1", action: "skipped:billing_past_due" },
+    ]);
+  });
+
+  it("does not skip an active organization on the billing gate", async () => {
+    state.dueSchedules = [schedule({ organizations: { status: "active" } })];
+
+    const response = await GET(new Request("https://example.com/cron/dispatch-runs"));
+    const body = await response.json();
+
+    expect(state.startMock).toHaveBeenCalledTimes(1);
+    expect(body.results).toEqual([{ scheduleId: "sched-1", action: "started" }]);
+  });
+
+  it("skips a schedule that would exceed its organization's monthly quota, but still advances next_run_at", async () => {
+    state.dueSchedules = [schedule({})];
+    state.checkQuotaMock.mockResolvedValue({
+      blocked: true,
+      reason: "Monthly post quota reached (8/8 on the Starter plan).",
+    });
+
+    const response = await GET(new Request("https://example.com/cron/dispatch-runs"));
+    const body = await response.json();
+
+    expect(state.startMock).not.toHaveBeenCalled();
+    expect(body.results).toEqual([
+      { scheduleId: "sched-1", action: "skipped:quota_exceeded" },
     ]);
     expect(state.scheduleUpdates).toEqual([{ id: "sched-1" }]);
   });

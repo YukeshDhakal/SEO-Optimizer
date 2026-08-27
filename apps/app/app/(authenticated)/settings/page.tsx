@@ -41,9 +41,14 @@ const SettingsPage = async () => {
           <h1 className="font-semibold text-2xl">Settings</h1>
           <p className="text-muted-foreground text-sm">{organization.name}</p>
         </div>
-        <Button asChild size="sm" variant="outline">
-          <Link href="/settings/audit">Audit log</Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button asChild size="sm" variant="outline">
+            <Link href="/settings/billing">Billing</Link>
+          </Button>
+          <Button asChild size="sm" variant="outline">
+            <Link href="/settings/audit">Audit log</Link>
+          </Button>
+        </div>
       </div>
 
       <Card>
