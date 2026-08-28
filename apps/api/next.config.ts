@@ -17,3 +17,5 @@ if (env.ANALYZE === "true") {
 // Phase 4: enables the "use workflow"/"use step" directives used by
 // @repo/workflows (imported from the cron dispatcher route).
 export default withWorkflow(nextConfig);
+
+// vercel-deploy-trigger: initial production deploy 2026-08-29

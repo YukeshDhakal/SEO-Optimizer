@@ -33,3 +33,5 @@ if (env.ANALYZE === "true") {
 }
 
 export default withCMS(nextConfig);
+
+// vercel-deploy-trigger: initial production deploy 2026-08-29
