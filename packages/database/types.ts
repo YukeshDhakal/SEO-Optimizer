@@ -84,6 +84,79 @@ export type Database = {
           },
         ]
       }
+      google_ads_credentials: {
+        Row: {
+          created_at: string
+          google_ads_customer_id: string | null
+          id: string
+          secret_ref: string | null
+          site_connection_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          google_ads_customer_id?: string | null
+          id?: string
+          secret_ref?: string | null
+          site_connection_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          google_ads_customer_id?: string | null
+          id?: string
+          secret_ref?: string | null
+          site_connection_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "google_ads_credentials_site_connection_id_fkey"
+            columns: ["site_connection_id"]
+            isOneToOne: true
+            referencedRelation: "site_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      keyword_research: {
+        Row: {
+          avg_monthly_searches: number | null
+          competition: string | null
+          competition_index: number | null
+          id: string
+          keyword: string
+          site_connection_id: string
+          synced_at: string
+        }
+        Insert: {
+          avg_monthly_searches?: number | null
+          competition?: string | null
+          competition_index?: number | null
+          id?: string
+          keyword: string
+          site_connection_id: string
+          synced_at?: string
+        }
+        Update: {
+          avg_monthly_searches?: number | null
+          competition?: string | null
+          competition_index?: number | null
+          id?: string
+          keyword?: string
+          site_connection_id?: string
+          synced_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "keyword_research_site_connection_id_fkey"
+            columns: ["site_connection_id"]
+            isOneToOne: false
+            referencedRelation: "site_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_members: {
         Row: {
           created_at: string
@@ -723,6 +796,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      delete_google_ads_credentials: {
+        Args: { p_site_connection_id: string }
+        Returns: undefined
+      }
       delete_search_console_credentials: {
         Args: { p_site_connection_id: string }
         Returns: undefined
@@ -739,6 +816,14 @@ export type Database = {
           similarity: number
           title: string
         }[]
+      }
+      get_google_ads_credentials: {
+        Args: { p_site_connection_id: string }
+        Returns: Json
+      }
+      get_google_ads_credentials_for_sync: {
+        Args: { p_site_connection_id: string }
+        Returns: Json
       }
       get_search_console_credentials: {
         Args: { p_site_connection_id: string }
@@ -771,6 +856,14 @@ export type Database = {
         Returns: boolean
       }
       is_org_owner: { Args: { target_org_id: string }; Returns: boolean }
+      set_google_ads_credentials: {
+        Args: { p_secret: Json; p_site_connection_id: string }
+        Returns: string
+      }
+      set_google_ads_credentials_for_sync: {
+        Args: { p_secret: Json; p_site_connection_id: string }
+        Returns: string
+      }
       set_search_console_credentials: {
         Args: { p_secret: Json; p_site_connection_id: string }
         Returns: string

@@ -1,4 +1,4 @@
-import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
+import { signState as signStateShared, verifyState as verifyStateShared } from "@repo/security/oauth-state";
 import { keys } from "./keys";
 import type { GscStatePayload, GscTokens } from "./types";
 
@@ -109,12 +109,10 @@ export const refreshAccessToken = async (
 // --- OAuth `state` signing ------------------------------------------------
 //
 // Stateless CSRF protection: no server-side "pending connect request" table.
-// `state` is `base64url(payload).base64url(hmacSignature)`; the callback
-// route verifies the signature and rejects anything stale (see MAX_AGE_MS)
-// before trusting the embedded siteConnectionId. This is the first signing
-// helper in the repo (packages/security only wraps Arcjet bot/rate-limit
-// checks) — kept here rather than promoted to packages/security since it's
-// only ever used by this OAuth flow.
+// The actual sign/verify logic lives in @repo/security/oauth-state (shared
+// with packages/google-ads, which needs the identical scheme with its own
+// secret) — this is just the GSC-specific wiring: which secret, what payload
+// shape, how long a token stays valid.
 
 const MAX_STATE_AGE_MS = 10 * 60 * 1000; // 10 minutes — long enough for a real consent-screen detour, short enough to bound replay risk
 
@@ -125,41 +123,8 @@ const requireStateSecret = (): string => {
   return GSC_OAUTH_STATE_SECRET;
 };
 
-const base64url = (input: Buffer | string): string =>
-  Buffer.from(input).toString("base64url");
+export const signState = (payload: Omit<GscStatePayload, "nonce">): string =>
+  signStateShared<GscStatePayload>(requireStateSecret(), payload);
 
-const sign = (data: string): string =>
-  base64url(createHmac("sha256", requireStateSecret()).update(data).digest());
-
-export const signState = (payload: Omit<GscStatePayload, "nonce">): string => {
-  const full: GscStatePayload = { ...payload, nonce: randomUUID() };
-  const encodedPayload = base64url(JSON.stringify(full));
-  return `${encodedPayload}.${sign(encodedPayload)}`;
-};
-
-export const verifyState = (token: string): GscStatePayload | null => {
-  const [encodedPayload, signature] = token.split(".");
-  if (!(encodedPayload && signature)) {
-    return null;
-  }
-
-  const expectedSignature = sign(encodedPayload);
-  const provided = Buffer.from(signature);
-  const expected = Buffer.from(expectedSignature);
-  if (provided.length !== expected.length || !timingSafeEqual(provided, expected)) {
-    return null;
-  }
-
-  let payload: GscStatePayload;
-  try {
-    payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8"));
-  } catch {
-    return null;
-  }
-
-  if (Date.now() - payload.issuedAt > MAX_STATE_AGE_MS) {
-    return null;
-  }
-
-  return payload;
-};
+export const verifyState = (token: string): GscStatePayload | null =>
+  verifyStateShared<GscStatePayload>(requireStateSecret(), token, MAX_STATE_AGE_MS);

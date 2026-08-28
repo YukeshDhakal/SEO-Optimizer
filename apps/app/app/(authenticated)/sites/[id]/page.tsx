@@ -6,6 +6,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentOrganization } from "../../../lib/organization";
 import { PauseToggleButton } from "../pause-toggle-button";
+import { ConnectGoogleAdsForm } from "./connect-google-ads-form";
 import { ConnectSearchConsoleForm } from "./connect-search-console-form";
 import { ConnectShopifyForm } from "./connect-shopify-form";
 import { ConnectWebflowForm } from "./connect-webflow-form";
@@ -55,6 +56,19 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
     .select("query, clicks")
     .eq("site_connection_id", site.id)
     .order("clicks", { ascending: false })
+    .limit(5);
+
+  const { data: googleAdsCredentials } = await supabase
+    .from("google_ads_credentials")
+    .select("status, google_ads_customer_id")
+    .eq("site_connection_id", site.id)
+    .maybeSingle();
+
+  const { data: cachedKeywords } = await supabase
+    .from("keyword_research")
+    .select("keyword, avg_monthly_searches")
+    .eq("site_connection_id", site.id)
+    .order("avg_monthly_searches", { ascending: false })
     .limit(5);
 
   const canManage =
@@ -153,6 +167,21 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
             }
             siteConnectionId={site.id}
             topQueries={topGscQueries ?? []}
+          />
+          <ConnectGoogleAdsForm
+            cachedKeywords={(cachedKeywords ?? []).map((row) => ({
+              keyword: row.keyword,
+              avgMonthlySearches: row.avg_monthly_searches,
+            }))}
+            credentials={
+              googleAdsCredentials
+                ? {
+                    status: googleAdsCredentials.status as "pending" | "connected" | "error",
+                    googleAdsCustomerId: googleAdsCredentials.google_ads_customer_id,
+                  }
+                : null
+            }
+            siteConnectionId={site.id}
           />
           <EditSiteForm site={site} />
           <DeleteSiteButton id={site.id} />

@@ -51,9 +51,28 @@ let tenantSettingsOverride: { require_approval: boolean; paused: boolean } = {
   paused: false,
 };
 
-const makeBuilder = () => {
+// Unset by default — every existing test's generic `.select().eq(...)`
+// (no `.single()`) resolves via `.then` to a single `row` OBJECT, not an
+// array, from `makeBuilder()` below. keyword-volume-check.ts's step guards
+// non-array `data` with `Array.isArray` and treats it as "no cache data",
+// which is exactly the fail-open branch of `evaluateKeywordVolume` — so
+// every pre-existing test here exercises that branch automatically and
+// never hits the keyword-volume gate, with no changes needed to keep
+// passing. Only the one test below that explicitly sets this override
+// exercises the gate's blocking path with real array-shaped rows.
+let keywordVolumeOverride: {
+  keywordRows: { keyword: string; avg_monthly_searches: number | null }[];
+  gscRows: { query: string; clicks: number; impressions: number }[];
+} | null = null;
+
+const makeBuilder = (table?: string) => {
   const row = { id: "row-id", ...tenantSettingsOverride };
-  const result = { data: row, error: null };
+  let result: { data: unknown; error: null } = { data: row, error: null };
+  if (keywordVolumeOverride && table === "keyword_research") {
+    result = { data: keywordVolumeOverride.keywordRows, error: null };
+  } else if (keywordVolumeOverride && table === "search_console_queries") {
+    result = { data: keywordVolumeOverride.gscRows, error: null };
+  }
   const builder: Record<string, unknown> = {};
   for (const method of ["insert", "update", "select", "eq", "order", "limit"]) {
     builder[method] = vi.fn(() => builder);
@@ -67,7 +86,7 @@ const makeBuilder = () => {
 
 vi.mock("@repo/database", () => ({
   database: {
-    from: vi.fn(() => makeBuilder()),
+    from: vi.fn((table: string) => makeBuilder(table)),
     // Only reached by `checkDuplicateContent` when `generateEmbedding`
     // returns a real embedding — every test here leaves it `undefined`
     // (see the `@repo/ai-engine` mock above), so this never actually gets
@@ -95,7 +114,10 @@ const draftMock = vi.mocked(draft);
 const geoSeoOptimizeMock = vi.mocked(geoSeoOptimize);
 const policyCheckMock = vi.mocked(runPolicyCheck);
 
-const TOPIC = { topic: "Espresso machine buying guide", primaryKeyword: "espresso machine" };
+const TOPIC = {
+  topic: "Espresso machine buying guide",
+  primaryKeyword: "espresso machine",
+};
 const RESEARCH = {
   facts: ["Fact one", "Fact two"],
   sources: [{ title: "Source A", url: "https://example.com/a" }],
@@ -133,6 +155,7 @@ const BASE_INPUT = {
 beforeEach(() => {
   vi.clearAllMocks();
   tenantSettingsOverride = { require_approval: false, paused: false };
+  keywordVolumeOverride = null;
   selectTopicMock.mockResolvedValue(TOPIC);
   researchMock.mockResolvedValue(RESEARCH);
   outlineMock.mockResolvedValue(OUTLINE);
@@ -168,10 +191,16 @@ describe("contentPipelineWorkflow retry loop", () => {
     expect(queriesCallIndex).toBeGreaterThanOrEqual(0);
 
     const queriesBuilder = fromMock.mock.results[queriesCallIndex].value;
-    expect(queriesBuilder.eq).toHaveBeenCalledWith("site_connection_id", "site-1");
+    expect(queriesBuilder.eq).toHaveBeenCalledWith(
+      "site_connection_id",
+      "site-1"
+    );
 
     expect(selectTopicMock).toHaveBeenCalledWith(
-      expect.objectContaining({ organizationId: "org-1", topicHint: "coffee gear" })
+      expect.objectContaining({
+        organizationId: "org-1",
+        topicHint: "coffee gear",
+      })
     );
   });
 
@@ -222,5 +251,36 @@ describe("contentPipelineWorkflow retry loop", () => {
 
     expect(result.status).toBe("blocked");
     expect(selectTopicMock).not.toHaveBeenCalled();
+  });
+
+  // Phase 8: keyword_volume_check runs after duplicate_check, using
+  // keyword_research (Google Ads) + search_console_queries (GSC) cache data.
+  it("returns status:'blocked' when the keyword-volume check trips, after drafting has already run", async () => {
+    geoSeoOptimizeMock.mockResolvedValueOnce(VALID_GEO_SEO);
+    keywordVolumeOverride = {
+      keywordRows: [{ keyword: "espresso machine", avg_monthly_searches: 3 }],
+      gscRows: [],
+    };
+
+    const result = await contentPipelineWorkflow(BASE_INPUT);
+
+    expect(result.status).toBe("blocked");
+    expect(result.reason).toContain("espresso machine");
+    // The gate runs after drafting, not before — draft/geo_seo_optimize
+    // already completed by the time it fires.
+    expect(draftMock).toHaveBeenCalledTimes(1);
+    expect(geoSeoOptimizeMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not block when the keyword has low volume but the site already has real GSC performance for it", async () => {
+    geoSeoOptimizeMock.mockResolvedValueOnce(VALID_GEO_SEO);
+    keywordVolumeOverride = {
+      keywordRows: [{ keyword: "espresso machine", avg_monthly_searches: 3 }],
+      gscRows: [{ query: "espresso machine", clicks: 5, impressions: 200 }],
+    };
+
+    const result = await contentPipelineWorkflow(BASE_INPUT);
+
+    expect(result.status).toBe("succeeded");
   });
 });

@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@repo/security": "*",
     "@t3-oss/env-nextjs": "^0.13.10",
     "zod": "^4.3.6"
   },

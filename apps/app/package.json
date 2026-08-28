@@ -19,6 +19,7 @@
     "@repo/database": "*",
     "@repo/design-system": "*",
     "@repo/feature-flags": "*",
+    "@repo/google-ads": "*",
     "@repo/next-config": "*",
     "@repo/notifications": "*",
     "@repo/observability": "*",

@@ -6,6 +6,7 @@ import { keys as collaboration } from "@repo/collaboration/keys";
 import { keys as database } from "@repo/database/keys";
 import { keys as email } from "@repo/email/keys";
 import { keys as flags } from "@repo/feature-flags/keys";
+import { keys as googleAds } from "@repo/google-ads/keys";
 import { keys as core } from "@repo/next-config/keys";
 import { keys as notifications } from "@repo/notifications/keys";
 import { keys as observability } from "@repo/observability/keys";
@@ -28,6 +29,7 @@ export const env = createEnv({
     database(),
     email(),
     flags(),
+    googleAds(),
     notifications(),
     observability(),
     payments(),

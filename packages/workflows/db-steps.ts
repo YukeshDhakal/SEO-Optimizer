@@ -80,6 +80,7 @@ export type ExtendedStepName =
   | "kill_switch_check"
   | "rate_limit_check"
   | "duplicate_check"
+  | "keyword_volume_check"
   | "quota_check";
 
 export const recordStepStart = async (

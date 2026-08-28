@@ -37,6 +37,7 @@ import {
   writeAuditLogStep,
 } from "./guardrail-steps";
 import { checkQuotaStep, incrementUsageStep } from "./billing-steps";
+import { keywordVolumeCheckStep } from "./keyword-volume-check";
 
 const MAX_DRAFT_ATTEMPTS = 3; // initial attempt + 2 retries — same as Phase 3
 
@@ -254,6 +255,29 @@ export async function contentPipelineWorkflow(
       entityType: "pipeline_run",
       entityId: runId,
       metadata: { reason, similarity: duplicate.similarity },
+    });
+    await markRunBlocked(runId, reason);
+    return { status: "blocked", runId, reason };
+  }
+
+  // Keyword-volume check: a hard blocker, same tier as duplicate_check —
+  // best-effort though (never blocks) when no Keyword Planner cache exists
+  // for this site yet, see keyword-volume-check.ts's evaluateKeywordVolume.
+  const keywordVolume = await runTrackedStep("keyword_volume_check", () =>
+    keywordVolumeCheckStep({
+      siteConnectionId: input.siteConnectionId,
+      primaryKeyword: topic.primaryKeyword,
+    })
+  );
+  if (keywordVolume.blocked) {
+    const reason = keywordVolume.reasons.join("; ");
+    await writeAuditLogStep({
+      organizationId: input.organizationId,
+      actor: input.createdBy,
+      action: "run.blocked.keyword_volume_check",
+      entityType: "pipeline_run",
+      entityId: runId,
+      metadata: { reason },
     });
     await markRunBlocked(runId, reason);
     return { status: "blocked", runId, reason };
