@@ -38,10 +38,20 @@ export const env = createEnv({
     // broken. Declared here anyway so it shows up in this app's env schema
     // for discoverability/`.env.example` generation.
     EMERGENCY_STOP: z.enum(["true", "false"]).optional(),
+    // @supabase/server: verifies caller JWTs against Supabase's new
+    // publishable/secret key pair + JWKS endpoint, distinct from the
+    // legacy anon/service_role pair already covered by @repo/auth and
+    // @repo/database's keys.
+    SUPABASE_PUBLISHABLE_KEY: z.string().min(1).optional(),
+    SUPABASE_SECRET_KEY: z.string().min(1).optional(),
+    SUPABASE_JWKS_URL: z.url().optional(),
   },
   client: {},
   runtimeEnv: {
     CRON_SECRET: process.env.CRON_SECRET,
     EMERGENCY_STOP: process.env.EMERGENCY_STOP,
+    SUPABASE_PUBLISHABLE_KEY: process.env.SUPABASE_PUBLISHABLE_KEY,
+    SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
+    SUPABASE_JWKS_URL: process.env.SUPABASE_JWKS_URL,
   },
 });

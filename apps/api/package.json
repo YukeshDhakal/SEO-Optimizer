@@ -24,6 +24,7 @@
     "@repo/search-console": "*",
     "@repo/workflows": "*",
     "@sentry/nextjs": "^10.42.0",
+    "@supabase/server": "^1.4.1",
     "@t3-oss/env-nextjs": "^0.13.10",
     "import-in-the-middle": "^3.0.0",
     "next": "16.1.6",
