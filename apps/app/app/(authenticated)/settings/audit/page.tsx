@@ -16,12 +16,12 @@ export const metadata: Metadata = { title: "Audit log" };
 
 const badgeVariant = (action: string) => {
   if (action.includes("blocked") || action.includes("rejected") || action.includes("failed")) {
-    return "destructive" as const;
+    return "error" as const;
   }
   if (action.includes("published") || action.includes("granted") || action.includes("unpaused")) {
-    return "default" as const;
+    return "success" as const;
   }
-  return "secondary" as const;
+  return "neutral" as const;
 };
 
 // Read-only — every row here was written server-side (workflow steps, the

@@ -24,12 +24,15 @@ interface RunsPageProperties {
 
 const statusVariant = (status: string) => {
   if (status === "succeeded") {
-    return "default" as const;
+    return "success" as const;
   }
-  if (status === "failed" || status === "blocked") {
-    return "destructive" as const;
+  if (status === "failed" || status === "blocked" || status === "rejected") {
+    return "error" as const;
   }
-  return "secondary" as const;
+  if (status === "running") {
+    return "info" as const;
+  }
+  return "neutral" as const;
 };
 
 const RunsPage = async ({ params }: RunsPageProperties) => {

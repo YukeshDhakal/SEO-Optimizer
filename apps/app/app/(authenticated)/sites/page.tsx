@@ -21,14 +21,14 @@ export const metadata: Metadata = {
 
 const statusVariant = (
   status: string
-): "default" | "secondary" | "destructive" => {
+): "success" | "error" | "neutral" => {
   if (status === "connected") {
-    return "default";
+    return "success";
   }
   if (status === "error") {
-    return "destructive";
+    return "error";
   }
-  return "secondary";
+  return "neutral";
 };
 
 const SitesPage = async () => {
@@ -89,7 +89,7 @@ const SitesPage = async () => {
                     <Badge variant={statusVariant(site.status)}>
                       {site.status}
                     </Badge>
-                    {site.paused && <Badge variant="outline">Paused</Badge>}
+                    {site.paused && <Badge variant="muted">Paused</Badge>}
                   </div>
                 </TableCell>
                 <TableCell className="text-muted-foreground">

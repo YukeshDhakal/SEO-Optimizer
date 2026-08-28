@@ -68,10 +68,10 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
           <p className="text-muted-foreground text-sm">{site.cms_type}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant={site.status === "connected" ? "default" : "secondary"}>
+          <Badge variant={site.status === "connected" ? "success" : "neutral"}>
             {site.status}
           </Badge>
-          {site.paused && <Badge variant="outline">Paused</Badge>}
+          {site.paused && <Badge variant="muted">Paused</Badge>}
           <Button asChild size="sm" variant="outline">
             <Link href={`/sites/${site.id}/runs`}>Runs</Link>
           </Button>
@@ -100,7 +100,7 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
         // manual pause via the toggle below resets the failure count to 0,
         // so this combination reliably means "auto-paused", not "an admin
         // chose to pause this."
-        <div className="flex items-center justify-between gap-4 rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm">
+        <div className="flex items-center justify-between gap-4 rounded-md border border-status-error-fg/25 bg-status-error-bg px-4 py-3 text-sm text-status-error-fg">
           <p>
             <strong>Automatically paused</strong> after{" "}
             {site.consecutive_publish_failures} consecutive publish

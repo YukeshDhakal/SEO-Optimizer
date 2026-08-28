@@ -24,12 +24,12 @@ interface PostsPageProperties {
 
 const statusVariant = (status: string) => {
   if (status === "published") {
-    return "default" as const;
+    return "success" as const;
   }
   if (status === "failed") {
-    return "destructive" as const;
+    return "error" as const;
   }
-  return "secondary" as const;
+  return "muted" as const;
 };
 
 const PostsPage = async ({ params }: PostsPageProperties) => {

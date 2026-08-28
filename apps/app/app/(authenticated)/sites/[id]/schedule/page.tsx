@@ -83,7 +83,7 @@ const SchedulePage = async ({ params }: SchedulePageProperties) => {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant={schedule.enabled ? "default" : "secondary"}>
+                    <Badge variant={schedule.enabled ? "success" : "muted"}>
                       {schedule.enabled ? "Enabled" : "Paused"}
                     </Badge>
                     {canManage && (

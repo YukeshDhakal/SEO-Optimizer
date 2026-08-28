@@ -23,12 +23,18 @@ interface RunDetailPageProperties {
 
 const statusVariant = (status: string) => {
   if (status === "succeeded") {
-    return "default" as const;
+    return "success" as const;
   }
   if (status === "failed" || status === "blocked" || status === "rejected") {
-    return "destructive" as const;
+    return "error" as const;
   }
-  return "secondary" as const;
+  if (status === "running") {
+    return "info" as const;
+  }
+  if (status === "retried") {
+    return "warning" as const;
+  }
+  return "neutral" as const;
 };
 
 // Still a read-on-load view, not a live/streaming one — Phase 4 made the
