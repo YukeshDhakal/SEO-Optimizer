@@ -1,3 +1,4 @@
+// touch: force Vercel monorepo "affected project" detection to rebuild after BASEHUB_TOKEN was added
 import { withCMS } from "@repo/cms/next-config";
 import { withToolbar } from "@repo/feature-flags/lib/toolbar";
 import { config, withAnalyzer } from "@repo/next-config";
