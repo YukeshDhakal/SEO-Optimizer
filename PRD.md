@@ -24,12 +24,16 @@ Quillrun is a multi-tenant SaaS: an autonomous SEO/GEO content agent that resear
 - **Database/Auth**: Supabase project `acyauqpeykgrivrajksa` ("YukeshDhakal's Org")
 - **Lovable design project**: "Content Autopilot" (workspace `dd60d9b2a04383a7c40a`) — pure UI/UX exploration with mock data, used to pull the "Quillrun Dashboard" visual design (cream/teal palette, IBM Plex fonts, 6-state status pills) back into this production app on 2026-08-28. Not wired to real backend; kept as a design reference only.
 
-### ⚠️ Deploy status
-As of the first 3 deploy attempts (2026-08-29), **quillrun-app, quillrun-web, and quillrun-api had never had a successful production deployment on Vercel** — build failed on missing `NEXT_PUBLIC_APP_URL`/`NEXT_PUBLIC_WEB_URL` (the only two env vars that are actually required at build time — see §5, everything else in this codebase is `.optional()` by design).
+### ✅ Deploy status — all three live as of 2026-08-29
+First successful production deploy achieved for all three projects. What it took, in order:
 
-**Fixed same day**: added `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_WEB_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and `SUPABASE_URL` (production + preview) to all three Vercel projects via `vercel env add`, pointed at each project's assigned `*.vercel.app` domain. Also fixed `apps/api/vercel.json`: `/cron/dispatch-runs` was `*/5 * * * *`, which fails at deploy time on the Hobby plan (daily cron only) — collapsed to `0 2 * * *` as a stopgap (see `PROCESS_ARCHITECTURE.md` §8 for the tradeoff and how to revisit it).
+1. **Missing required env vars** — `NEXT_PUBLIC_APP_URL`/`NEXT_PUBLIC_WEB_URL` are the only two env vars actually required at build time (everything else in this codebase is `.optional()` by design, see §5). Added those plus the non-secret Supabase public config (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_URL`) to all three Vercel projects via `vercel env add`, pointed at each project's assigned `*.vercel.app` domain.
+2. **Hobby-plan cron cadence** — `apps/api/vercel.json`'s `/cron/dispatch-runs` was `*/5 * * * *`, which fails at deploy time on the Hobby plan (daily cron only). Collapsed to `0 2 * * *` as a stopgap (see `PROCESS_ARCHITECTURE.md` §8 for the tradeoff and how to revisit it).
+3. **No framework detected** — `quillrun-app`/`quillrun-api` had `framework: null` on Vercel (monorepo auto-detection gap), so the deploy step looked for a static `public/` output instead of the real Next.js build output. Fixed by adding `"framework": "nextjs"` explicitly to each app's `vercel.json`.
+4. **BaseHub schema mismatch** — `packages/cms` (next-forge's stock marketing-blog CMS integration, used by `apps/web`'s home/blog/legal pages) needs a BaseHub repo forked from their official next-forge blueprint, not a blank account — a blank repo's schema doesn't have the `_slug`/`_title` fields the template code expects. Once the user forked the blueprint and generated a Read Token (`bshb_pk_...`, least-privilege — not the Admin token), added `BASEHUB_TOKEN` to `quillrun-web` and it built clean.
+5. **Vercel's monorepo "skip unaffected projects"** — an env-var-only change or an empty commit doesn't register as a file change for a given app's dependency graph, so Vercel silently skips rebuilding it (`readyState: CANCELED`, `errorLink` points at `vercel.com/docs/monorepos#skipping-unaffected-projects`). Whenever only an env var changed, force a rebuild with a trivial real file touch (this repo's own precedent, see commit `397e3a9`) rather than an empty commit.
 
-**Still open**: `SUPABASE_SERVICE_ROLE_KEY` is not set on Vercel — no tool can read it back out of the Supabase dashboard, so paste it in manually (Project Settings → API) before database writes will work in production. Confirm the next deploy actually goes green (redeploy was triggered via `git push`, not yet observed to complete as of this edit). Several open Dependabot PRs (react/@types/react, concurrently, sharp bumps) are still sitting untriaged against `master`.
+**Still open**: `SUPABASE_SERVICE_ROLE_KEY` is not set on Vercel — no tool can read it back out of the Supabase dashboard, so paste it in manually (Project Settings → API) before database writes will work in production. `STRIPE_SECRET_KEY`/`STRIPE_WEBHOOK_SECRET` are also still unset (see §4's Stripe fixes commit `24eff3f` for what's ready once they are — restricted key preferred, mark Sensitive on Vercel). Several open Dependabot PRs (react/@types/react, concurrently, sharp bumps) are still sitting untriaged against `master`.
 
 ## 3. Architecture
 
@@ -84,6 +88,7 @@ Each phase is one commit on `master` (chronological, oldest first). This is the 
 | — | `3159abd` | Dropped `bun` wrapper from scripts — deploy environment only has npm, `package-lock.json` is what's committed. |
 | — | `422641c`, `397e3a9` | Attempts to trigger the first Vercel deploy — **still failing**, see §2. |
 | — | `8b3c3aa` | Added `@supabase/server` to `apps/api` for JWT verification via the new Supabase key pair (`SUPABASE_PUBLISHABLE_KEY`/`SUPABASE_SECRET_KEY`/`SUPABASE_JWKS_URL`), alongside the legacy anon/service_role keys `@repo/auth`/`@repo/database` still use. |
+| — | `73b6c20`–`2480521` | First successful production deploys (see §2 for the full sequence: env vars, cron cadence, framework detection, BaseHub schema). Stripe best-practices review (`24eff3f`): SDK 20.4.1→22.6.0, `apiVersion` bumped, `STRIPE_SECRET_KEY` validator now accepts restricted (`rk_`) keys, webhook handler covers `invoice.paid` alongside `invoice.payment_succeeded`. |
 
 **Recurring pattern worth knowing**: every phase that touches RLS gets empirically verified live (outsider/member/admin/owner role simulation via `execute_sql`, fixtures cleaned up after) rather than trusted from policy text alone, and every phase runs a Supabase security-advisor pass afterward — which has caught an over-privileged default RPC grant in nearly every phase (Phase 1, 2, 5 all found and fixed one).
 
@@ -125,7 +130,7 @@ Each phase is one commit on `master` (chronological, oldest first). This is the 
 
 ## 8. How to resume work here
 
-1. Check `git log --oneline` against this table — if new commits exist beyond `8b3c3aa`, this file is stale; update §4 first.
+1. Check `git log --oneline` against this table — if new commits exist beyond `2480521`, this file is stale; update §4 first.
 2. Fix the Vercel env-var gap (§2) before anything else — nothing is live yet.
 3. Local dev: `npm run dev` (turbo dev across all apps). `apps/app` on :3000, `apps/web` on :3001.
 4. DB migrations: `npm run db:push` (runs `supabase db push` from `packages/database`).
