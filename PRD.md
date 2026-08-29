@@ -2,7 +2,7 @@
 
 Status snapshot as of 2026-08-29. This file exists so any future session (human or agent) can pick up this project cold. Update it as phases land — don't let it drift.
 
-See also `PROCESS_ARCHITECTURE.md` — the runtime companion to this file: process flows, control points, and failure modes, rather than what's built.
+See also `PROCESS_ARCHITECTURE.md` — the runtime companion to this file: process flows, control points, and failure modes, rather than what's built. See also `ROUTING_SPEC.md` — every navigation decision across `apps/web`/`apps/app`: entry gates, post-action destinations, OAuth round trips, and known routing gaps.
 
 ## 1. What Quillrun is
 
