@@ -11,15 +11,24 @@ interface HeroProps {
 
 export const Hero = async ({ dictionary }: HeroProps) => {
   const latestPost = await blog.getLatestPost();
+  // The BaseHub-generated `Post` type is only as good as the live schema
+  // the connected repo currently has - it's drifted twice already (see
+  // PRD.md §2 item 4/8) and the inferred type stopped including `_slug`,
+  // hard-failing the build even though getLatestPost() already degrades
+  // to null at runtime on any query mismatch. Read defensively through an
+  // unknown cast rather than trust the schema-derived type here; this
+  // still works correctly once the BaseHub repo's schema is fixed.
+  const latestPostSlug = (latestPost as unknown as { _slug?: string } | null)
+    ?._slug;
 
   return (
     <div className="w-full">
       <div className="container mx-auto">
         <div className="flex flex-col items-center justify-center gap-8 py-20 lg:py-40">
-          {latestPost && (
+          {latestPostSlug && (
             <div>
               <Button asChild className="gap-4" size="sm" variant="secondary">
-                <Link href={`/blog/${latestPost._slug}`}>
+                <Link href={`/blog/${latestPostSlug}`}>
                   {dictionary.web.home.hero.announcement}{" "}
                   <MoveRight className="h-4 w-4" />
                 </Link>
