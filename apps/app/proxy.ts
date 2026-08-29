@@ -4,7 +4,7 @@ import {
   noseconeOptionsWithToolbar,
   securityMiddleware,
 } from "@repo/security/proxy";
-import type { NextProxy } from "next/server";
+import { type NextProxy, NextResponse } from "next/server";
 import { env } from "./env";
 
 const securityHeaders = env.FLAGS_SECRET
@@ -14,7 +14,19 @@ const securityHeaders = env.FLAGS_SECRET
 // Clerk middleware wraps other middleware in its callback
 // For apps using Clerk, compose middleware inside authMiddleware callback
 // For apps without Clerk, use createNEMO for composition (see apps/web)
-export default authMiddleware(() => securityHeaders()) as unknown as NextProxy;
+export default authMiddleware(async (_userId, request) => {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-pathname", request.nextUrl.pathname);
+  requestHeaders.set("x-search", request.nextUrl.search);
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  const securityResponse = await securityHeaders();
+
+  for (const [name, value] of securityResponse.headers) {
+    response.headers.set(name, value);
+  }
+
+  return response;
+}) as unknown as NextProxy;
 
 export const config = {
   matcher: [

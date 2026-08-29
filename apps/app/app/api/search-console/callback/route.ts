@@ -44,7 +44,10 @@ export const GET = async (request: Request): Promise<Response> => {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return NextResponse.redirect(new URL("/sign-in", env.NEXT_PUBLIC_APP_URL));
+    const target = `/sites/${siteConnectionId}`;
+    return NextResponse.redirect(
+      new URL(`/sign-in?next=${encodeURIComponent(target)}`, env.NEXT_PUBLIC_APP_URL)
+    );
   }
 
   let tokens: Awaited<ReturnType<typeof exchangeCodeForTokens>>;

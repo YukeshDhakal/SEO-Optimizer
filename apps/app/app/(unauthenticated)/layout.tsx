@@ -1,5 +1,5 @@
 import { ModeToggle } from "@repo/design-system/components/mode-toggle";
-import { CommandIcon } from "lucide-react";
+import { FeatherIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 interface AuthLayoutProps {
@@ -11,8 +11,8 @@ const AuthLayout = ({ children }: AuthLayoutProps) => (
     <div className="relative hidden h-full flex-col bg-muted p-10 text-white lg:flex dark:border-r">
       <div className="absolute inset-0 bg-muted" />
       <div className="relative z-20 flex items-center font-medium text-lg text-primary">
-        <CommandIcon className="mr-2 h-6 w-6" />
-        Acme Inc
+        <FeatherIcon className="mr-2 h-6 w-6" />
+        Quillrun
       </div>
       <div className="absolute top-4 right-4">
         <ModeToggle />
@@ -20,11 +20,10 @@ const AuthLayout = ({ children }: AuthLayoutProps) => (
       <div className="relative z-20 mt-auto text-primary">
         <blockquote className="space-y-2">
           <p className="text-lg">
-            &ldquo;This library has saved me countless hours of work and helped
-            me deliver stunning designs to my clients faster than ever
-            before.&rdquo;
+            &ldquo;Content automation with visible guardrails — always under your
+            control.&rdquo;
           </p>
-          <footer className="text-sm">Sofia Davis</footer>
+          <footer className="text-sm">Quillrun</footer>
         </blockquote>
       </div>
     </div>

@@ -5,7 +5,11 @@ import { type FormEvent, useState } from "react";
 import { createClient } from "../client";
 
 // See sign-in.tsx for why this deliberately avoids @repo/design-system.
-export const SignUp = () => {
+interface SignUpProps {
+  readonly nextUrl?: string;
+}
+
+export const SignUp = ({ nextUrl = "/" }: SignUpProps) => {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,7 +37,7 @@ export const SignUp = () => {
     }
 
     if (data.session) {
-      router.push("/");
+      router.push(nextUrl);
       router.refresh();
       return;
     }

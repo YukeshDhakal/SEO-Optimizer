@@ -2,6 +2,7 @@ import { currentUser } from "@repo/auth/server";
 import { SidebarProvider } from "@repo/design-system/components/ui/sidebar";
 import { showBetaFeature } from "@repo/feature-flags";
 import { secure } from "@repo/security";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { env } from "@/env";
@@ -21,7 +22,11 @@ const AppLayout = async ({ children }: AppLayoutProperties) => {
   const user = await currentUser();
 
   if (!user) {
-    redirect("/sign-in");
+    const requestHeaders = await headers();
+    const pathname = requestHeaders.get("x-pathname") ?? "/";
+    const search = requestHeaders.get("x-search") ?? "";
+    const next = pathname.startsWith("/") ? `${pathname}${search}` : "/";
+    redirect(`/sign-in?next=${encodeURIComponent(next)}`);
   }
 
   const organization = await getCurrentOrganization();

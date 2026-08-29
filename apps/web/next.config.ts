@@ -6,24 +6,29 @@ import { withLogging, withSentry } from "@repo/observability/next-config";
 import type { NextConfig } from "next";
 import { env } from "@/env";
 
+const workspaceRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+
 let nextConfig: NextConfig = withToolbar(withLogging(config));
+
+nextConfig.turbopack = {
+  ...nextConfig.turbopack,
+  root: workspaceRoot,
+};
 
 nextConfig.images?.remotePatterns?.push({
   protocol: "https",
   hostname: "assets.basehub.com",
 });
 
-if (process.env.NODE_ENV === "production") {
-  const redirects: NextConfig["redirects"] = async () => [
-    {
-      source: "/legal",
-      destination: "/legal/privacy",
-      statusCode: 301,
-    },
-  ];
+const redirects: NextConfig["redirects"] = async () => [
+  {
+    source: "/legal",
+    destination: "/legal/privacy",
+    statusCode: 301,
+  },
+];
 
-  nextConfig.redirects = redirects;
-}
+nextConfig.redirects = redirects;
 
 if (env.VERCEL) {
   nextConfig = withSentry(nextConfig);
@@ -36,3 +41,5 @@ if (env.ANALYZE === "true") {
 export default withCMS(nextConfig);
 
 // vercel-deploy-trigger: initial production deploy 2026-08-29
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";

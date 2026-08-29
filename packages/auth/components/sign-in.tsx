@@ -9,7 +9,11 @@ import { createClient } from "../client";
 // so depending back on @repo/design-system would create a circular
 // workspace dependency. Plain elements + the app's existing Tailwind/shadcn
 // utility classes instead.
-export const SignIn = () => {
+interface SignInProps {
+  readonly nextUrl?: string;
+}
+
+export const SignIn = ({ nextUrl = "/" }: SignInProps) => {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,7 +38,7 @@ export const SignIn = () => {
       return;
     }
 
-    router.push("/");
+    router.push(nextUrl);
     router.refresh();
   };
 

@@ -1,156 +1,40 @@
 import { Button } from "@repo/design-system/components/ui/button";
-import { Check, Minus, MoveRight, PhoneCall } from "lucide-react";
+import { Check, MoveRight, PhoneCall } from "lucide-react";
 import Link from "next/link";
 import { env } from "@/env";
 
+const plans = [
+  { name: "Single site", price: "£49", unit: "per month", description: "One site, for an owner who writes nothing and wants a blog that moves.", cta: "Start free", items: ["8 posts a month", "WordPress or hosted blog", "Approval gate and audit log", "Email when a run needs you"] },
+  { name: "Studio", price: "£39", unit: "per site, per month", description: "Three to ten client sites, one dashboard, one stop button over all of them.", cta: "Start free", featured: true, items: ["12 posts a month per site", "Cross-client overview", "Per-site schedules and limits", "Teammates and approval routing"] },
+  { name: "Operations", price: "Talk to us", unit: "", description: "Eleven sites or more, or a compliance team that needs to see the gates.", cta: "Book a call", items: ["Custom volume and retention", "Policy and approval controls", "Priority implementation support", "Security review and SSO options"] },
+];
+
 const Pricing = () => (
-  <div className="w-full py-20 lg:py-40">
-    <div className="container mx-auto">
-      <div className="flex flex-col items-center justify-center gap-4 text-center">
-        <div className="flex flex-col gap-2">
-          <h2 className="max-w-xl text-center font-regular text-3xl tracking-tighter md:text-5xl">
-            Prices that make sense!
-          </h2>
-          <p className="max-w-xl text-center text-lg text-muted-foreground leading-relaxed tracking-tight">
-            Managing a small business today is already tough.
-          </p>
-        </div>
-        <div className="grid w-full grid-cols-3 divide-x pt-20 text-left lg:grid-cols-4">
-          <div className="col-span-3 lg:col-span-1" />
-          <div className="flex flex-col gap-2 px-3 py-1 md:px-6 md:py-4">
-            <p className="text-2xl">Startup</p>
-            <p className="text-muted-foreground text-sm">
-              Our goal is to streamline SMB trade, making it easier and faster
-              than ever for everyone and everywhere.
-            </p>
-            <p className="mt-8 flex flex-col gap-2 text-xl lg:flex-row lg:items-center">
-              <span className="text-4xl">$40</span>
-              <span className="text-muted-foreground text-sm"> / month</span>
-            </p>
-            <Button asChild className="mt-8 gap-4" variant="outline">
-              <Link href={env.NEXT_PUBLIC_APP_URL}>
-                Try it <MoveRight className="h-4 w-4" />
+  <main className="w-full py-20 lg:py-32">
+    <section className="container mx-auto">
+      <p className="mb-3 font-medium text-muted-foreground text-sm uppercase tracking-[0.16em]">Pricing</p>
+      <h1 className="max-w-xl font-semibold text-4xl tracking-tight md:text-5xl">Priced per site, not per word.</h1>
+      <p className="mt-4 max-w-2xl text-lg text-muted-foreground leading-relaxed">Start with three free posts. Approval is required by default, and nothing publishes without a visible record of why it passed.</p>
+      <div className="mt-10 grid gap-4 lg:grid-cols-3">
+        {plans.map((plan) => (
+          <article className={`relative flex flex-col rounded-xl border p-6 ${plan.featured ? "border-primary shadow-sm" : ""}`} key={plan.name}>
+            {plan.featured && <span className="absolute -top-3 right-5 rounded-full bg-primary px-3 py-1 font-medium text-primary-foreground text-xs">Most agencies</span>}
+            <h2 className="font-semibold text-2xl">{plan.name}</h2>
+            <p className="mt-3 min-h-20 text-muted-foreground text-sm leading-relaxed">{plan.description}</p>
+            <p className="mt-6 font-semibold text-3xl">{plan.price}{plan.unit && <span className="ml-2 font-normal text-muted-foreground text-sm">{plan.unit}</span>}</p>
+            <Button asChild className="mt-6 gap-2" variant={plan.featured ? "default" : "outline"}>
+              <Link href={plan.name === "Operations" ? "/contact" : `${env.NEXT_PUBLIC_APP_URL}/sign-up`}>
+                {plan.cta}{plan.name === "Operations" ? <PhoneCall className="h-4 w-4" /> : <MoveRight className="h-4 w-4" />}
               </Link>
             </Button>
-          </div>
-          <div className="flex flex-col gap-2 px-3 py-1 md:px-6 md:py-4">
-            <p className="text-2xl">Growth</p>
-            <p className="text-muted-foreground text-sm">
-              Our goal is to streamline SMB trade, making it easier and faster
-              than ever for everyone and everywhere.
-            </p>
-            <p className="mt-8 flex flex-col gap-2 text-xl lg:flex-row lg:items-center">
-              <span className="text-4xl">$40</span>
-              <span className="text-muted-foreground text-sm"> / month</span>
-            </p>
-            <Button asChild className="mt-8 gap-4">
-              <Link href={env.NEXT_PUBLIC_APP_URL}>
-                Try it <MoveRight className="h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-          <div className="flex flex-col gap-2 px-3 py-1 md:px-6 md:py-4">
-            <p className="text-2xl">Enterprise</p>
-            <p className="text-muted-foreground text-sm">
-              Our goal is to streamline SMB trade, making it easier and faster
-              than ever for everyone and everywhere.
-            </p>
-            <p className="mt-8 flex flex-col gap-2 text-xl lg:flex-row lg:items-center">
-              <span className="text-4xl">$40</span>
-              <span className="text-muted-foreground text-sm"> / month</span>
-            </p>
-            <Button asChild className="mt-8 gap-4" variant="outline">
-              <Link href="/contact">
-                Contact us <PhoneCall className="h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-          <div className="col-span-3 px-3 py-4 lg:col-span-1 lg:px-6">
-            <b>Features</b>
-          </div>
-          <div />
-          <div />
-          <div />
-          {/* New Line */}
-          <div className="col-span-3 px-3 py-4 lg:col-span-1 lg:px-6">SSO</div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Check className="h-4 w-4 text-primary" />
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Check className="h-4 w-4 text-primary" />
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Check className="h-4 w-4 text-primary" />
-          </div>
-          {/* New Line */}
-          <div className="col-span-3 px-3 py-4 lg:col-span-1 lg:px-6">
-            AI Assistant
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Minus className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Check className="h-4 w-4 text-primary" />
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Check className="h-4 w-4 text-primary" />
-          </div>
-          {/* New Line */}
-          <div className="col-span-3 px-3 py-4 lg:col-span-1 lg:px-6">
-            Version Control
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Minus className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Check className="h-4 w-4 text-primary" />
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Check className="h-4 w-4 text-primary" />
-          </div>
-          {/* New Line */}
-          <div className="col-span-3 px-3 py-4 lg:col-span-1 lg:px-6">
-            Members
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <p className="text-muted-foreground text-sm">5 members</p>
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <p className="text-muted-foreground text-sm">25 members</p>
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <p className="text-muted-foreground text-sm">100+ members</p>
-          </div>
-          {/* New Line */}
-          <div className="col-span-3 px-3 py-4 lg:col-span-1 lg:px-6">
-            Multiplayer Mode
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Minus className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Check className="h-4 w-4 text-primary" />
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Check className="h-4 w-4 text-primary" />
-          </div>
-          {/* New Line */}
-          <div className="col-span-3 px-3 py-4 lg:col-span-1 lg:px-6">
-            Orchestration
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Minus className="h-4 w-4 text-muted-foreground" />
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Check className="h-4 w-4 text-primary" />
-          </div>
-          <div className="flex justify-center px-3 py-1 md:px-6 md:py-4">
-            <Check className="h-4 w-4 text-primary" />
-          </div>
-        </div>
+            <ul className="mt-7 space-y-3 border-t pt-6 text-sm">
+              {plan.items.map((item) => <li className="flex gap-2" key={item}><Check aria-hidden="true" className="mt-0.5 h-4 w-4 text-primary" />{item}</li>)}
+            </ul>
+          </article>
+        ))}
       </div>
-    </div>
-  </div>
+    </section>
+  </main>
 );
 
 export default Pricing;

@@ -37,12 +37,12 @@ export const Hero = async ({ dictionary }: HeroProps) => {
           <div className="flex flex-row gap-3">
             <Button asChild className="gap-4" size="lg" variant="outline">
               <Link href="/contact">
-                Get in touch <PhoneCall className="h-4 w-4" />
+                Talk to us <PhoneCall className="h-4 w-4" />
               </Link>
             </Button>
             <Button asChild className="gap-4" size="lg">
-              <Link href={env.NEXT_PUBLIC_APP_URL}>
-                Sign up <MoveRight className="h-4 w-4" />
+              <Link href={`${env.NEXT_PUBLIC_APP_URL}/sign-up`}>
+                Start free <MoveRight className="h-4 w-4" />
               </Link>
             </Button>
           </div>
