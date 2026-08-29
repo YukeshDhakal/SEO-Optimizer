@@ -218,6 +218,18 @@ describe("Stripe payments webhook", () => {
     ]);
   });
 
+  it("invoice.paid clears a past_due org back to active (same handler as invoice.payment_succeeded)", async () => {
+    state.orgsByCustomerId.cus_paid = { id: "org-paid", stripe_customer_id: "cus_paid", status: "past_due" };
+
+    const event = stripeEvent("invoice.paid", { customer: "cus_paid" });
+    await POST(request(event));
+
+    expect(state.orgUpdates).toEqual([{ id: "org-paid", patch: { status: "active" } }]);
+    expect(state.subscriptionUpdates).toEqual([
+      { organization_id: "org-paid", patch: expect.objectContaining({ status: "active" }) },
+    ]);
+  });
+
   it("customer.subscription.deleted marks the subscription canceled without touching organizations.status", async () => {
     state.orgsByCustomerId.cus_6 = { id: "org-6", stripe_customer_id: "cus_6", status: "active" };
 

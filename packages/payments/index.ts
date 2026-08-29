@@ -6,7 +6,7 @@ const { STRIPE_SECRET_KEY } = keys();
 
 export const stripe = STRIPE_SECRET_KEY
   ? new Stripe(STRIPE_SECRET_KEY, {
-      apiVersion: "2026-02-25.clover",
+      apiVersion: "2026-08-26.dahlia",
     })
   : undefined;
 

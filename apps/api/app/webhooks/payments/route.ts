@@ -248,6 +248,12 @@ export const POST = async (request: Request): Promise<Response> => {
         await handleInvoicePaymentFailed(event.data.object);
         break;
       }
+      // invoice.paid is the more complete signal (also fires for $0
+      // invoices and some non-card payment paths that don't always emit
+      // payment_succeeded) - handle both with the same idempotent logic so
+      // whichever arrives first (or both) leaves the org in the right
+      // state.
+      case "invoice.paid":
       case "invoice.payment_succeeded": {
         await handleInvoicePaymentSucceeded(event.data.object);
         break;
