@@ -3,3 +3,6 @@
 /.clerk/
 .vercel
 /.swc
+
+.vercel
+.env*

@@ -9,7 +9,7 @@
     },
     {
       "path": "/cron/dispatch-runs",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 2 * * *"
     },
     {
       "path": "/cron/sync-search-console",
