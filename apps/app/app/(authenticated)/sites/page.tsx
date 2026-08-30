@@ -1,13 +1,5 @@
 import { createClient } from "@repo/auth/server";
-import { Badge } from "@repo/design-system/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@repo/design-system/components/ui/table";
+import { StatusPill } from "@repo/design-system/components/status-pill";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -19,16 +11,21 @@ export const metadata: Metadata = {
   title: "Sites",
 };
 
-const statusVariant = (
-  status: string
-): "success" | "error" | "neutral" => {
-  if (status === "connected") {
-    return "success";
+const sitePillStatus = (site: {
+  status: string;
+  paused: boolean;
+  consecutive_publish_failures: number;
+}) => {
+  if (site.paused) {
+    return "paused" as const;
   }
-  if (status === "error") {
-    return "error";
+  if (site.status === "error" || site.consecutive_publish_failures >= 3) {
+    return "failed" as const;
   }
-  return "neutral";
+  if (site.status === "connected") {
+    return "ok" as const;
+  }
+  return "await" as const;
 };
 
 const SitesPage = async () => {
@@ -47,71 +44,94 @@ const SitesPage = async () => {
     .eq("organization_id", organization.id)
     .order("created_at", { ascending: false });
 
+  const pausedCount = (sites ?? []).filter((s) => s.paused).length;
+  const summary =
+    sites && sites.length > 0
+      ? `${sites.length} connected${
+          pausedCount > 0 ? ` · ${pausedCount} paused` : ""
+        }`
+      : "No sites connected yet.";
+
   return (
-    <div className="flex flex-1 flex-col gap-6 p-4">
-      <div>
-        <h1 className="font-semibold text-2xl">Sites</h1>
-        <p className="text-muted-foreground text-sm">
-          Sites {organization.name} publishes to. Connecting a real CMS
-          adapter comes later — this just records the site.
-        </p>
+    <div className="flex flex-1 flex-col gap-5 p-6">
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <h1 className="font-semibold text-2xl tracking-tight">Sites</h1>
+          <p className="mt-1 text-muted-foreground text-sm">{summary}</p>
+        </div>
       </div>
 
-      {canManage && <NewSiteForm />}
+      {canManage && (
+        <div className="rounded-md border bg-card p-5">
+          <h2 className="mb-4 font-semibold text-sm">Connect a site</h2>
+          <NewSiteForm />
+        </div>
+      )}
 
       {sites && sites.length > 0 ? (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>CMS</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Failures</TableHead>
-              {canManage && <TableHead className="text-right">Actions</TableHead>}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sites.map((site) => (
-              <TableRow key={site.id}>
-                <TableCell>
-                  <Link
-                    className="font-medium hover:underline"
-                    href={`/sites/${site.id}`}
-                  >
-                    {site.display_name}
-                  </Link>
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {site.cms_type}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={statusVariant(site.status)}>
-                      {site.status}
-                    </Badge>
-                    {site.paused && <Badge variant="muted">Paused</Badge>}
-                  </div>
-                </TableCell>
-                <TableCell className="text-muted-foreground">
-                  {site.consecutive_publish_failures}
-                </TableCell>
+        <div className="overflow-hidden rounded-md border">
+          <table className="w-full text-sm">
+            <thead className="border-b bg-muted/40 text-left font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+              <tr>
+                <th className="px-4 py-2.5 font-medium">Site</th>
+                <th className="px-4 py-2.5 font-medium">CMS</th>
+                <th className="px-4 py-2.5 font-medium">State</th>
+                <th className="px-4 py-2.5 font-medium">Failures</th>
                 {canManage && (
-                  <TableCell className="text-right">
-                    <PauseToggleButton
-                      id={site.id}
-                      organizationId={organization.id}
-                      paused={site.paused}
-                    />
-                  </TableCell>
+                  <th className="px-4 py-2.5 text-right font-medium">
+                    Actions
+                  </th>
                 )}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {sites.map((site) => (
+                <tr className="hover:bg-muted/30" key={site.id}>
+                  <td className="px-4 py-3">
+                    <Link
+                      className="font-medium hover:underline"
+                      href={`/sites/${site.id}`}
+                    >
+                      {site.display_name}
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {site.cms_type}
+                  </td>
+                  <td className="px-4 py-3">
+                    <StatusPill status={sitePillStatus(site)} />
+                  </td>
+                  <td className="px-4 py-3 font-mono text-muted-foreground text-xs">
+                    {site.consecutive_publish_failures > 0 ? (
+                      <span className="text-status-error-fg">
+                        {site.consecutive_publish_failures}
+                      </span>
+                    ) : (
+                      site.consecutive_publish_failures
+                    )}
+                  </td>
+                  {canManage && (
+                    <td className="px-4 py-3 text-right">
+                      <PauseToggleButton
+                        id={site.id}
+                        organizationId={organization.id}
+                        paused={site.paused}
+                      />
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
-        <p className="text-muted-foreground text-sm">
-          No sites connected yet.
-        </p>
+        <div className="rounded-md border border-dashed p-9 text-center">
+          <p className="font-semibold text-base">No sites connected yet</p>
+          <p className="mx-auto mt-1.5 max-w-md text-muted-foreground text-sm">
+            Connect a WordPress site, or start a hosted blog we run for you.
+            The agent stays idle until a site exists.
+          </p>
+        </div>
       )}
     </div>
   );

@@ -99,6 +99,13 @@ export const StatusPill = ({ status, children, className }: StatusPillProps) => 
   );
 };
 
+// Raw {glyph, colour} for a status, for callers building their own compact
+// layout (e.g. a dense log row) rather than using the boxed StatusPill.
+export const statusGlyph = (status: PillStatus): { glyph: string; fg: string } => {
+  const s = STATUS[status];
+  return { glyph: s.glyph, fg: s.fg };
+};
+
 // A bare status dot, no label - for the sidebar's per-site indicators and
 // table sparkline cells, where a pill would be too heavy.
 export const StatusDot = ({ status, className }: { status: PillStatus | "none"; className?: string }) => {

@@ -1,13 +1,8 @@
 import { createClient } from "@repo/auth/server";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@repo/design-system/components/ui/card";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentOrganization } from "../../../../../lib/organization";
+import { SiteTabs } from "../../site-tabs";
 import { NewPostForm } from "../new-post-form";
 
 export const metadata: Metadata = {
@@ -39,18 +34,23 @@ const NewPostPage = async ({ params }: NewPostPageProperties) => {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-4">
-      <h1 className="font-semibold text-2xl">
-        New post — {site.display_name}
-      </h1>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Publish now</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <NewPostForm siteConnectionId={id} />
-        </CardContent>
-      </Card>
+    <div className="flex flex-1 flex-col gap-5 p-6">
+      <div>
+        <h1 className="font-semibold text-2xl tracking-tight">
+          Publish now
+        </h1>
+        <p className="mt-1 max-w-xl text-muted-foreground text-sm">
+          Write it yourself and push it straight to {site.display_name}.
+          This skips the agent entirely, so no quality gate and no policy
+          check.
+        </p>
+      </div>
+
+      <SiteTabs siteId={id} />
+
+      <div className="rounded-md border bg-card p-5">
+        <NewPostForm siteConnectionId={id} />
+      </div>
     </div>
   );
 };

@@ -1,12 +1,6 @@
 import { createClient } from "@repo/auth/server";
-import { Badge } from "@repo/design-system/components/ui/badge";
+import { StatusPill } from "@repo/design-system/components/status-pill";
 import { Button } from "@repo/design-system/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@repo/design-system/components/ui/card";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import {
@@ -14,6 +8,7 @@ import {
   toggleScheduleEnabled,
 } from "../../../../actions/schedules/mutate";
 import { getCurrentOrganization } from "../../../../lib/organization";
+import { SiteTabs } from "../site-tabs";
 import { NewScheduleForm } from "./new-schedule-form";
 
 export const metadata: Metadata = { title: "Schedule" };
@@ -52,40 +47,45 @@ const SchedulePage = async ({ params }: SchedulePageProperties) => {
     organization.role === "owner" || organization.role === "admin";
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-4">
+    <div className="flex flex-1 flex-col gap-5 p-6">
       <div>
-        <h1 className="font-semibold text-2xl">Schedule</h1>
-        <p className="text-muted-foreground text-sm">{site.display_name}</p>
+        <h1 className="font-semibold text-2xl tracking-tight">Schedule</h1>
+        <p className="mt-1 max-w-xl text-muted-foreground text-sm">
+          When the agent starts runs on its own for {site.display_name}.
+          Organization limits still apply and always win.
+        </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Recurring generation</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <SiteTabs siteId={id} />
+
+      <div className="rounded-md border bg-card">
+        <div className="border-b px-5 py-3.5 font-semibold text-sm">
+          Recurring generation
+        </div>
+        <div className="px-5">
           {schedules && schedules.length > 0 ? (
-            <ul className="flex flex-col divide-y divide-border">
+            <div className="flex flex-col divide-y">
               {schedules.map((schedule) => (
-                <li
-                  className="flex items-center justify-between py-3"
+                <div
+                  className="flex flex-wrap items-center justify-between gap-3 py-3.5"
                   key={schedule.id}
                 >
                   <div>
                     <p className="font-medium text-sm">{schedule.cadence}</p>
-                    <p className="text-muted-foreground text-xs">
+                    <p className="font-mono text-[11px] text-muted-foreground">
                       {schedule.timezone} · {schedule.topic_hint}
                     </p>
                     {schedule.next_run_at && (
-                      <p className="text-muted-foreground text-xs">
+                      <p className="mt-0.5 font-mono text-[11px] text-muted-foreground">
                         Next run:{" "}
                         {new Date(schedule.next_run_at).toLocaleString()}
                       </p>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant={schedule.enabled ? "success" : "muted"}>
+                    <StatusPill status={schedule.enabled ? "ok" : "paused"}>
                       {schedule.enabled ? "Enabled" : "Paused"}
-                    </Badge>
+                    </StatusPill>
                     {canManage && (
                       <>
                         <form action={toggleScheduleEnabled}>
@@ -118,29 +118,25 @@ const SchedulePage = async ({ params }: SchedulePageProperties) => {
                       </>
                     )}
                   </div>
-                </li>
+                </div>
               ))}
-            </ul>
+            </div>
           ) : (
-            <p className="text-muted-foreground text-sm">
+            <p className="py-4 text-muted-foreground text-sm">
               No recurring schedule yet — every run happens manually.
             </p>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {canManage && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">New schedule</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <NewScheduleForm
-              organizationId={organization.id}
-              siteConnectionId={id}
-            />
-          </CardContent>
-        </Card>
+        <div className="rounded-md border bg-card p-5">
+          <h2 className="mb-4 font-semibold text-sm">New schedule</h2>
+          <NewScheduleForm
+            organizationId={organization.id}
+            siteConnectionId={id}
+          />
+        </div>
       )}
     </div>
   );

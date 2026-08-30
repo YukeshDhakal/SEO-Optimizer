@@ -1,13 +1,8 @@
 import { createClient } from "@repo/auth/server";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@repo/design-system/components/ui/card";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentOrganization } from "../../../../lib/organization";
+import { SiteTabs } from "../site-tabs";
 import { GeneratePostForm } from "./generate-post-form";
 
 export const metadata: Metadata = {
@@ -39,20 +34,23 @@ const GeneratePage = async ({ params }: GeneratePageProperties) => {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-4">
-      <h1 className="font-semibold text-2xl">
-        Generate post — {site.display_name}
-      </h1>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">
-            Research, draft, and SEO/GEO-optimize a post
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <GeneratePostForm siteConnectionId={id} />
-        </CardContent>
-      </Card>
+    <div className="flex flex-1 flex-col gap-5 p-6">
+      <div>
+        <h1 className="font-semibold text-2xl tracking-tight">
+          Generate a post
+        </h1>
+        <p className="mt-1 max-w-xl text-muted-foreground text-sm">
+          Give the agent a topic or keyword. It researches, outlines,
+          drafts, then has to pass a quality gate and a policy check before
+          anything reaches {site.display_name}.
+        </p>
+      </div>
+
+      <SiteTabs siteId={id} />
+
+      <div className="rounded-md border bg-card p-5">
+        <GeneratePostForm siteConnectionId={id} />
+      </div>
     </div>
   );
 };
