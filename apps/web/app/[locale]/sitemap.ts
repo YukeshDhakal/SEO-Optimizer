@@ -1,7 +1,8 @@
 import fs from "node:fs";
-import { blog, legal } from "@repo/cms";
+import { blog } from "@repo/cms";
 import type { MetadataRoute } from "next";
 import { env } from "@/env";
+import { legalSlugs } from "@/lib/legal-content";
 
 const appFolders = fs.readdirSync("app", { withFileTypes: true });
 const pages = appFolders
@@ -10,7 +11,7 @@ const pages = appFolders
   .filter((folder) => !folder.name.startsWith("("))
   .map((folder) => folder.name);
 const blogs = (await blog.getPosts()).map((post) => post._slug);
-const legals = (await legal.getPosts()).map((post) => post._slug);
+const legals = legalSlugs;
 const protocol = env.VERCEL_PROJECT_PRODUCTION_URL?.startsWith("https")
   ? "https"
   : "http";

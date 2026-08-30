@@ -1,11 +1,9 @@
-import { legal } from "@repo/cms";
 import { Status } from "@repo/observability/status";
 import Link from "next/link";
 import { env } from "@/env";
+import { legalDocs, legalSlugs } from "@/lib/legal-content";
 
-export const Footer = async () => {
-  const legalPages = await legal.getPostsMeta();
-
+export const Footer = () => {
   const navigationItems = [
     {
       title: "Home",
@@ -14,7 +12,7 @@ export const Footer = async () => {
     },
     {
       title: "Pages",
-      description: "Managing a small business today is already tough.",
+      description: "An SEO and GEO writer that publishes to your site on its own.",
       items: [
         {
           title: "Blog",
@@ -25,9 +23,9 @@ export const Footer = async () => {
     {
       title: "Legal",
       description: "We stay on top of the latest legal requirements.",
-      items: legalPages.map((post) => ({
-        title: post._title,
-        href: `/legal/${post._slug}`,
+      items: legalSlugs.map((slug) => ({
+        title: legalDocs[slug].title,
+        href: `/legal/${slug}`,
       })),
     },
   ];
@@ -47,10 +45,11 @@ export const Footer = async () => {
             <div className="flex flex-col items-start gap-8">
               <div className="flex flex-col gap-2">
                 <h2 className="max-w-xl text-left font-regular text-3xl tracking-tighter md:text-5xl">
-                  next-forge
+                  Quillrun
                 </h2>
                 <p className="max-w-lg text-left text-foreground/75 text-lg leading-relaxed tracking-tight">
-                  This is the start of something new.
+                  Autonomous content operations for small teams and the
+                  agencies that run them.
                 </p>
               </div>
               <Status />
