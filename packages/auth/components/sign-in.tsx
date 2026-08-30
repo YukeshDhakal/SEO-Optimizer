@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { createClient } from "../client";
+import { GoogleGlyph } from "./google-glyph";
 
 // Deliberately no @repo/design-system import here — that package's own
 // provider (DesignSystemProvider) imports AuthProvider from this package,
@@ -19,6 +20,7 @@ export const SignIn = ({ nextUrl = "/" }: SignInProps) => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -42,6 +44,33 @@ export const SignIn = ({ nextUrl = "/" }: SignInProps) => {
     router.refresh();
   };
 
+  // Redirects to Google, which sends the browser to Supabase's own
+  // hosted OAuth callback, which then redirects here to
+  // /auth/callback?next=... to finish the session exchange. Errors out
+  // with Supabase's own message if the Google provider isn't enabled in
+  // the Supabase dashboard yet - degrades the same way every other
+  // not-yet-configured integration in this codebase does, rather than
+  // hiding the button.
+  const handleGoogleSignIn = async () => {
+    setError(null);
+    setIsGoogleSubmitting(true);
+
+    const supabase = createClient();
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextUrl)}`,
+      },
+    });
+
+    if (oauthError) {
+      setIsGoogleSubmitting(false);
+      setError(oauthError.message);
+    }
+    // On success the browser navigates away to Google immediately - no
+    // further state update needed here.
+  };
+
   return (
     <div className="w-full max-w-sm rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
       <div className="mb-6 flex flex-col gap-1">
@@ -49,6 +78,20 @@ export const SignIn = ({ nextUrl = "/" }: SignInProps) => {
         <p className="text-muted-foreground text-sm">
           Enter your email and password to continue.
         </p>
+      </div>
+      <button
+        className="mb-4 flex h-9 w-full items-center justify-center gap-2 rounded-md border bg-background px-4 font-medium text-sm disabled:opacity-50"
+        disabled={isGoogleSubmitting}
+        onClick={handleGoogleSignIn}
+        type="button"
+      >
+        <GoogleGlyph />
+        {isGoogleSubmitting ? "Redirecting…" : "Continue with Google"}
+      </button>
+      <div className="mb-4 flex items-center gap-3 text-muted-foreground text-xs">
+        <span className="h-px flex-1 bg-border" />
+        or
+        <span className="h-px flex-1 bg-border" />
       </div>
       <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
         <div className="flex flex-col gap-2">

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { createClient } from "../client";
+import { GoogleGlyph } from "./google-glyph";
 
 // See sign-in.tsx for why this deliberately avoids @repo/design-system.
 interface SignUpProps {
@@ -16,6 +17,29 @@ export const SignUp = ({ nextUrl = "/" }: SignUpProps) => {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
+
+  // See sign-in.tsx's handleGoogleSignIn for the full round-trip
+  // explanation. Sign-up and sign-in use the same OAuth call - Supabase
+  // creates the account on first Google sign-in automatically, there's
+  // no separate "sign up with Google" API.
+  const handleGoogleSignIn = async () => {
+    setError(null);
+    setIsGoogleSubmitting(true);
+
+    const supabase = createClient();
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextUrl)}`,
+      },
+    });
+
+    if (oauthError) {
+      setIsGoogleSubmitting(false);
+      setError(oauthError.message);
+    }
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -54,6 +78,20 @@ export const SignUp = ({ nextUrl = "/" }: SignUpProps) => {
         <p className="text-muted-foreground text-sm">
           Enter your details to get started.
         </p>
+      </div>
+      <button
+        className="mb-4 flex h-9 w-full items-center justify-center gap-2 rounded-md border bg-background px-4 font-medium text-sm disabled:opacity-50"
+        disabled={isGoogleSubmitting}
+        onClick={handleGoogleSignIn}
+        type="button"
+      >
+        <GoogleGlyph />
+        {isGoogleSubmitting ? "Redirecting…" : "Continue with Google"}
+      </button>
+      <div className="mb-4 flex items-center gap-3 text-muted-foreground text-xs">
+        <span className="h-px flex-1 bg-border" />
+        or
+        <span className="h-px flex-1 bg-border" />
       </div>
       <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
         <div className="flex flex-col gap-2">
