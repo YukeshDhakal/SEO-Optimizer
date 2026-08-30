@@ -1,194 +1,183 @@
 "use client";
 
 import { UserMenu } from "@repo/auth/components/user-menu";
+import type { Tables } from "@repo/database";
 import { ModeToggle } from "@repo/design-system/components/mode-toggle";
-import { Button } from "@repo/design-system/components/ui/button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@repo/design-system/components/ui/collapsible";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
-  SidebarMenuAction,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
-  useSidebar,
 } from "@repo/design-system/components/ui/sidebar";
+import { StatusDot } from "@repo/design-system/components/status-pill";
 import { cn } from "@repo/design-system/lib/utils";
-import type { Tables } from "@repo/database";
-import { NotificationsTrigger } from "@repo/notifications/components/trigger";
-import {
-  AnchorIcon,
-  ChevronRightIcon,
-  GlobeIcon,
-  Settings2Icon,
-} from "lucide-react";
+import { FileTextIcon, GlobeIcon, LayoutGridIcon, ShieldIcon } from "lucide-react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
-import { Search } from "./search";
+
+export interface SidebarSite {
+  readonly id: string;
+  readonly display_name: string;
+  readonly status: string;
+  readonly paused: boolean;
+  readonly consecutive_publish_failures: number;
+}
 
 interface GlobalSidebarProperties {
   readonly children: ReactNode;
   readonly organization: Tables<"organizations">;
+  readonly sites: SidebarSite[];
+  readonly requireApproval: boolean;
 }
 
-const data = {
-  navMain: [
-    {
-      title: "Sites",
-      url: "/sites",
-      icon: GlobeIcon,
-    },
-    {
-      title: "Settings",
-      url: "/settings",
-      icon: Settings2Icon,
-      items: [
-        {
-          // Phase 4: approval/pause/quota toggles (tenant_settings) live
-          // here. Team/Billing/Limits stay unimplemented template stubs —
-          // Team needs an invite flow, Billing is Phase 6, Limits overlaps
-          // tenant_settings' own quota fields once Phase 6 enforces them.
-          title: "General",
-          url: "/settings",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "/settings/billing",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
-    },
-  ],
-  navSecondary: [{ title: "Webhooks", url: "/webhooks", icon: AnchorIcon }],
+const siteDotStatus = (site: SidebarSite) => {
+  if (site.paused) {
+    return "paused" as const;
+  }
+  if (site.status === "error" || site.consecutive_publish_failures >= 3) {
+    return "failed" as const;
+  }
+  if (site.status === "connected") {
+    return "ok" as const;
+  }
+  return "await" as const;
 };
 
+// Dark shell (see --sidebar/-foreground/-accent/-border tokens in
+// packages/design-system/styles/globals.css - these already matched the
+// Quillrun Design handoff's palette from the earlier partial reskin,
+// commit 6e5492e; the component itself just never applied them). Four
+// flat nav destinations, no nested submenu, matching the handoff exactly
+// - Billing lives inside Settings instead of its own nav slot, Webhooks
+// (a next-forge Svix demo, unconfigured per PRD.md §5, not part of the
+// designed product) is dropped rather than carried forward unstyled.
 export const GlobalSidebar = ({
   children,
   organization,
+  sites,
+  requireApproval,
 }: GlobalSidebarProperties) => {
-  const sidebar = useSidebar();
+  const pathname = usePathname();
+  const initials = organization.name
+    .split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
+  const navItems = [
+    { key: "overview", label: "Overview", href: "/", icon: LayoutGridIcon },
+    { key: "sites", label: "Sites", href: "/sites", icon: GlobeIcon },
+    { key: "audit", label: "Audit log", href: "/settings/audit", icon: FileTextIcon },
+    {
+      key: "settings",
+      label: "Settings",
+      href: "/settings",
+      icon: ShieldIcon,
+      badge: requireApproval ? null : "off",
+    },
+  ];
+
+  const isActive = (href: string) =>
+    href === "/" ? pathname === "/" : pathname.startsWith(href);
+  const onSitePage = pathname.startsWith("/sites/") && pathname !== "/sites";
 
   return (
     <>
       <Sidebar variant="inset">
-        <SidebarHeader>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <div
-                className={cn(
-                  "flex h-[36px] items-center overflow-hidden px-2 font-medium text-sm transition-all",
-                  sidebar.open ? "" : "-mx-1"
-                )}
-              >
-                {/* No org switcher yet — one org per user in the UI for
-                    now (see apps/app/app/lib/organization.ts). */}
-                <span className="truncate">{organization.name}</span>
-              </div>
-            </SidebarMenuItem>
-          </SidebarMenu>
+        <SidebarHeader className="gap-0 border-sidebar-border border-b px-3 py-3.5">
+          <div className="flex items-center gap-2.5 rounded-md border border-sidebar-border bg-sidebar-accent/40 px-2.5 py-2">
+            <div className="flex size-6 shrink-0 items-center justify-center rounded-[5px] bg-sidebar-primary font-mono font-semibold text-[10.5px] text-sidebar-primary-foreground">
+              {initials}
+            </div>
+            <span className="truncate font-semibold text-[13px] text-sidebar-foreground">
+              {organization.name}
+            </span>
+          </div>
         </SidebarHeader>
-        <Search />
-        <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupLabel>Platform</SidebarGroupLabel>
-            <SidebarMenu>
-              {data.navMain.map((item) => (
-                <Collapsible
-                  asChild
-                  defaultOpen={false}
-                  key={item.title}
-                >
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild tooltip={item.title}>
-                      <Link href={item.url}>
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                    {item.items?.length ? (
-                      <>
-                        <CollapsibleTrigger asChild>
-                          <SidebarMenuAction className="data-[state=open]:rotate-90">
-                            <ChevronRightIcon />
-                            <span className="sr-only">Toggle</span>
-                          </SidebarMenuAction>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <SidebarMenuSub>
-                            {item.items?.map((subItem) => (
-                              <SidebarMenuSubItem key={subItem.title}>
-                                <SidebarMenuSubButton asChild>
-                                  <Link href={subItem.url}>
-                                    <span>{subItem.title}</span>
-                                  </Link>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                            ))}
-                          </SidebarMenuSub>
-                        </CollapsibleContent>
-                      </>
-                    ) : null}
-                  </SidebarMenuItem>
-                </Collapsible>
+        <SidebarContent className="gap-0 px-2 py-3">
+          <SidebarGroup className="p-0">
+            <SidebarGroupLabel className="px-2.5 font-mono text-[10px] text-sidebar-foreground/45 uppercase tracking-widest">
+              Workspace
+            </SidebarGroupLabel>
+            <SidebarMenu className="gap-0.5">
+              {navItems.map((item) => (
+                <SidebarMenuItem key={item.key}>
+                  <SidebarMenuButton
+                    asChild
+                    className={cn(
+                      "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                      isActive(item.href) &&
+                        "bg-sidebar-accent text-sidebar-foreground"
+                    )}
+                  >
+                    <Link href={item.href}>
+                      <item.icon />
+                      <span>{item.label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                  {item.badge && (
+                    <SidebarMenuBadge className="rounded-[4px] bg-status-warning-bg font-mono text-[10px] text-status-warning-fg">
+                      {item.badge}
+                    </SidebarMenuBadge>
+                  )}
+                </SidebarMenuItem>
               ))}
             </SidebarMenu>
           </SidebarGroup>
-          <SidebarGroup className="mt-auto">
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {data.navSecondary.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <Link href={item.url}>
-                        <item.icon />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
+
+          <SidebarGroup className="mt-3 p-0">
+            <SidebarGroupLabel className="px-2.5 font-mono text-[10px] text-sidebar-foreground/45 uppercase tracking-widest">
+              Sites
+            </SidebarGroupLabel>
+            <SidebarMenu className="gap-0.5">
+              {sites.length === 0 && (
+                <p className="px-2.5 py-1.5 text-[12px] text-sidebar-foreground/45">
+                  No sites yet
+                </p>
+              )}
+              {sites.map((site) => (
+                <SidebarMenuItem key={site.id}>
+                  <SidebarMenuButton
+                    asChild
+                    className={cn(
+                      "gap-2.5 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                      onSitePage &&
+                        pathname.startsWith(`/sites/${site.id}`) &&
+                        "bg-sidebar-accent text-sidebar-foreground"
+                    )}
+                    size="sm"
+                  >
+                    <Link href={`/sites/${site.id}`}>
+                      <StatusDot status={siteDotStatus(site)} />
+                      <span className="truncate">{site.display_name}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                  {site.paused && site.consecutive_publish_failures >= 3 && (
+                    <SidebarMenuBadge className="font-mono text-[10px] text-status-error-fg">
+                      ✕
+                    </SidebarMenuBadge>
+                  )}
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
           </SidebarGroup>
         </SidebarContent>
-        <SidebarFooter>
-          <SidebarMenu>
-            <SidebarMenuItem className="flex items-center gap-2">
+        <SidebarFooter className="gap-2 border-sidebar-border border-t px-3 py-3">
+          <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1 text-sidebar-foreground/70 text-xs [&_button]:text-sidebar-foreground/50 [&_button:hover]:text-sidebar-foreground [&_span]:text-sidebar-foreground/85">
               <UserMenu />
-              <div className="flex shrink-0 items-center gap-px">
-                <ModeToggle />
-                <Button
-                  asChild
-                  className="shrink-0"
-                  size="icon"
-                  variant="ghost"
-                >
-                  <div className="h-4 w-4">
-                    <NotificationsTrigger />
-                  </div>
-                </Button>
-              </div>
-            </SidebarMenuItem>
-          </SidebarMenu>
+            </div>
+            <ModeToggle />
+          </div>
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>{children}</SidebarInset>
