@@ -61,12 +61,7 @@ const SitesPage = async () => {
         </div>
       </div>
 
-      {canManage && (
-        <div className="rounded-md border bg-card p-5">
-          <h2 className="mb-4 font-semibold text-sm">Connect a site</h2>
-          <NewSiteForm />
-        </div>
-      )}
+      {canManage && <NewSiteForm />}
 
       {sites && sites.length > 0 ? (
         <div className="overflow-hidden rounded-md border">

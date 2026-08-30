@@ -289,12 +289,7 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
           </div>
         </div>
 
-        <div className="rounded-md border bg-card p-4">
-          <span className="font-semibold text-sm">Site details</span>
-          <div className="mt-3">
-            <EditSiteForm site={site} />
-          </div>
-        </div>
+        <EditSiteForm site={site} />
       </div>
 
       {canManage && (
