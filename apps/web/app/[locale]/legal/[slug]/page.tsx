@@ -28,8 +28,14 @@ export const generateMetadata = async ({
   });
 };
 
-export const generateStaticParams = (): { slug: string }[] =>
-  legalSlugs.map((slug) => ({ slug }));
+// Deliberately no generateStaticParams: every other route in this app
+// renders dynamically (marked `ƒ` in the build output - only this route
+// and blog/[slug] were `●` SSG), and mixing static generation into an
+// otherwise fully-dynamic [locale]-nested tree threw a real production
+// DYNAMIC_SERVER_USAGE error (seen in Vercel runtime logs from
+// 2026-08-30 onward, predating this fix). Content is static data either
+// way - dynamic rendering just means it's computed per-request instead
+// of at build time, which is fine for 3 lightweight pages.
 
 const LegalPage = async ({ params }: LegalPageProperties) => {
   const { slug } = await params;

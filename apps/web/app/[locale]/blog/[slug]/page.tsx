@@ -26,17 +26,13 @@ export const generateMetadata = async ({
   });
 };
 
-export const generateStaticParams = async (): Promise<{ slug: string }[]> => {
-  const posts = await blog.getPosts();
-
-  return posts.map(({ _slug }) => ({ slug: _slug }));
-};
-
 // blog.getPost() always resolves null for now - see packages/cms/index.ts.
 // No real posts exist, so every slug 404s until a real content backend is
 // connected; kept as a thin passthrough rather than the full BaseHub
 // rich-text renderer so there's nothing here to break on the next schema
-// swap.
+// swap. Deliberately no generateStaticParams - see legal/[slug]/page.tsx
+// for why mixing SSG into this otherwise fully-dynamic [locale] tree
+// threw a real production DYNAMIC_SERVER_USAGE error.
 const BlogPost = async ({ params }: BlogPostProperties) => {
   const { slug } = await params;
   const page = await blog.getPost(slug);
