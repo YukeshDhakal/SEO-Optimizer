@@ -129,6 +129,12 @@
   --animate-accordion-up: accordion-up 0.2s ease-out;
   --animate-qr-marquee: qr-marquee 26s linear infinite;
   --animate-qr-pulse: qr-pulse 1.6s ease-in-out infinite;
+  --animate-qr-bar: qr-bar 7s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+  --animate-qr-fill: qr-fill 12s linear infinite;
+  --animate-qr-stamp: qr-stamp 8s steps(1, end) infinite;
+  --animate-qr-dash: qr-dash 0.9s linear infinite;
+  --animate-qr-ring: qr-ring 2.6s ease-out infinite;
+  --animate-qr-drift: qr-drift 6s linear infinite;
 
   @keyframes accordion-down {
     from {
@@ -164,6 +170,79 @@
     }
     50% {
       opacity: 0.35;
+    }
+  }
+
+  @keyframes qr-bar {
+    0% {
+      transform: scaleY(0.06);
+    }
+    14% {
+      transform: scaleY(1);
+    }
+    82% {
+      transform: scaleY(1);
+    }
+    100% {
+      transform: scaleY(0.06);
+    }
+  }
+
+  @keyframes qr-fill {
+    0% {
+      width: 0%;
+    }
+    18% {
+      width: 100%;
+    }
+    95% {
+      width: 100%;
+    }
+    100% {
+      width: 0%;
+    }
+  }
+
+  @keyframes qr-stamp {
+    0%,
+    15% {
+      opacity: 0;
+      transform: translateY(4px) scale(0.82);
+    }
+    24%,
+    94% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(4px) scale(0.82);
+    }
+  }
+
+  @keyframes qr-dash {
+    to {
+      background-position: 28px 0;
+    }
+  }
+
+  @keyframes qr-ring {
+    0% {
+      transform: scale(0.94);
+      opacity: 0.9;
+    }
+    100% {
+      transform: scale(1.22);
+      opacity: 0;
+    }
+  }
+
+  @keyframes qr-drift {
+    from {
+      transform: translate3d(0, 0, 0);
+    }
+    to {
+      transform: translate3d(-40px, -40px, 0);
     }
   }
 }
