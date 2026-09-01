@@ -7,6 +7,7 @@ import { createMetadata } from "@repo/seo/metadata";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { localeHref } from "@/lib/locale-href";
 
 interface BlogProps {
   params: Promise<{
@@ -58,7 +59,7 @@ const BlogIndex = async ({ params }: BlogProps) => {
                     "flex cursor-pointer flex-col gap-4 border-[3px] border-foreground bg-card shadow-[8px_8px_0_#111] transition-transform hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[12px_12px_0_#111]",
                     !index && "md:col-span-2"
                   )}
-                  href={`/blog/${post._slug}`}
+                  href={localeHref(locale, `/blog/${post._slug}`)}
                   key={post._slug}
                 >
                   <Image

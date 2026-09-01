@@ -2,6 +2,7 @@ import { Button } from "@repo/design-system/components/ui/button";
 import { Check, MoveRight, PhoneCall } from "lucide-react";
 import Link from "next/link";
 import { env } from "@/env";
+import { localeHref } from "@/lib/locale-href";
 
 const plans = [
   { name: "Single site", price: "£49", unit: "per month", description: "One site, for an owner who writes nothing and wants a blog that moves.", cta: "Start free", items: ["8 posts a month", "WordPress or hosted blog", "Approval gate and audit log", "Email when a run needs you"] },
@@ -9,7 +10,15 @@ const plans = [
   { name: "Operations", price: "Talk to us", unit: "", description: "Eleven sites or more, or a compliance team that needs to see the gates.", cta: "Book a call", items: ["Custom volume and retention", "Policy and approval controls", "Priority implementation support", "Security review and SSO options"] },
 ];
 
-const Pricing = () => (
+interface PricingProps {
+  params: Promise<{ locale: string }>;
+}
+
+const Pricing = async ({ params }: PricingProps) => {
+  const { locale } = await params;
+  const contactHref = localeHref(locale, "/contact");
+
+  return (
   <main className="w-full py-20 lg:py-28">
     <section className="container mx-auto px-4">
       <div className="flex flex-col items-start gap-4 md:flex-row md:items-end md:justify-between">
@@ -44,7 +53,7 @@ const Pricing = () => (
               className="mt-6 gap-2"
               variant={plan.featured ? "default" : "outline"}
             >
-              <Link href={plan.name === "Operations" ? "/contact" : `${env.NEXT_PUBLIC_APP_URL}/sign-up`}>
+              <Link href={plan.name === "Operations" ? contactHref : `${env.NEXT_PUBLIC_APP_URL}/sign-up`}>
                 {plan.cta}
                 {plan.name === "Operations" ? <PhoneCall className="h-4 w-4" /> : <MoveRight className="h-4 w-4" />}
               </Link>
@@ -62,6 +71,7 @@ const Pricing = () => (
       </div>
     </section>
   </main>
-);
+  );
+};
 
 export default Pricing;

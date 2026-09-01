@@ -42,9 +42,9 @@ const RootLayout = async ({ children, params }: RootLayoutProperties) => {
       <body>
         <AnalyticsProvider>
           <DesignSystemProvider>
-            <Header dictionary={dictionary} />
+            <Header dictionary={dictionary} locale={locale} />
             {children}
-            <Footer />
+            <Footer locale={locale} />
           </DesignSystemProvider>
           <Toolbar />
         </AnalyticsProvider>

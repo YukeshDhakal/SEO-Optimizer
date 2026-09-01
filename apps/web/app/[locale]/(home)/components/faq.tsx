@@ -8,12 +8,14 @@ import { Button } from "@repo/design-system/components/ui/button";
 import type { Dictionary } from "@repo/internationalization";
 import { PhoneCall } from "lucide-react";
 import Link from "next/link";
+import { localeHref } from "@/lib/locale-href";
 
 interface FAQProps {
   dictionary: Dictionary;
+  locale: string;
 }
 
-export const FAQ = ({ dictionary }: FAQProps) => (
+export const FAQ = ({ dictionary, locale }: FAQProps) => (
   <div className="w-full border-b-[3px] border-foreground py-16 lg:py-20">
     <div className="container mx-auto px-4">
       <div className="grid gap-10 lg:grid-cols-[420px_1fr]">
@@ -25,7 +27,7 @@ export const FAQ = ({ dictionary }: FAQProps) => (
             {dictionary.web.home.faq.description}
           </p>
           <Button asChild className="mt-2 w-fit gap-2" variant="secondary">
-            <Link href="/contact">
+            <Link href={localeHref(locale, "/contact")}>
               {dictionary.web.home.faq.cta}
               <PhoneCall className="h-4 w-4" />
             </Link>

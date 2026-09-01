@@ -2,15 +2,20 @@ import { Status } from "@repo/observability/status";
 import Link from "next/link";
 import { env } from "@/env";
 import { legalDocs, legalSlugs } from "@/lib/legal-content";
+import { localeHref } from "@/lib/locale-href";
+
+interface FooterProps {
+  locale: string;
+}
 
 // Matches the neobrutalism handoff's footer exactly: black section, cream
 // text, three columns (brand+tagline / Pages / Legal), uppercase
 // letter-spaced micro-labels above each link column.
-export const Footer = () => {
+export const Footer = ({ locale }: FooterProps) => {
   const pageLinks = [
-    { title: "Home", href: "/" },
-    { title: "Writing", href: "/blog" },
-    { title: "Pricing", href: "/pricing" },
+    { title: "Home", href: localeHref(locale, "/") },
+    { title: "Writing", href: localeHref(locale, "/blog") },
+    { title: "Pricing", href: localeHref(locale, "/pricing") },
     ...(env.NEXT_PUBLIC_DOCS_URL
       ? [{ title: "Docs", href: env.NEXT_PUBLIC_DOCS_URL }]
       : []),
@@ -18,7 +23,7 @@ export const Footer = () => {
 
   const legalLinks = legalSlugs.map((slug) => ({
     title: legalDocs[slug].title,
-    href: `/legal/${slug}`,
+    href: localeHref(locale, `/legal/${slug}`),
   }));
 
   return (

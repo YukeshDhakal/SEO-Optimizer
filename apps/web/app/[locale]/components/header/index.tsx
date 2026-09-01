@@ -7,10 +7,12 @@ import { Feather, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { env } from "@/env";
+import { localeHref } from "@/lib/locale-href";
 import { LanguageSwitcher } from "./language-switcher";
 
 interface HeaderProps {
   dictionary: Dictionary;
+  locale: string;
 }
 
 // Flat nav, no dropdown — matches the neobrutalism handoff's header exactly
@@ -18,22 +20,23 @@ interface HeaderProps {
 // background on hover, sticky top with a 3px black bottom border). The
 // previous header's "Product" dropdown wrapping Pricing is gone; Pricing is
 // now a direct top-level link like every other item.
-export const Header = ({ dictionary }: HeaderProps) => {
+export const Header = ({ dictionary, locale }: HeaderProps) => {
   const navigationItems = [
-    { title: dictionary.web.header.home, href: "/" },
-    { title: dictionary.web.header.product.pricing, href: "/pricing" },
-    { title: dictionary.web.header.blog, href: "/blog" },
+    { title: dictionary.web.header.home, href: localeHref(locale, "/") },
+    { title: dictionary.web.header.product.pricing, href: localeHref(locale, "/pricing") },
+    { title: dictionary.web.header.blog, href: localeHref(locale, "/blog") },
     ...(env.NEXT_PUBLIC_DOCS_URL
       ? [{ title: dictionary.web.header.docs, href: env.NEXT_PUBLIC_DOCS_URL }]
       : []),
   ];
+  const contactHref = localeHref(locale, "/contact");
 
   const [isOpen, setOpen] = useState(false);
 
   return (
     <header className="sticky top-0 left-0 z-40 w-full border-b-[3px] border-foreground bg-background">
       <div className="container mx-auto flex h-[74px] items-center justify-between gap-6 px-4">
-        <Link className="flex shrink-0 items-center gap-2.5" href="/">
+        <Link className="flex shrink-0 items-center gap-2.5" href={localeHref(locale, "/")}>
           <Feather aria-hidden="true" className="h-7 w-7 text-primary" strokeWidth={2.25} />
           <span className="font-display whitespace-nowrap text-xl tracking-tight">
             QUILLRUN
@@ -57,7 +60,7 @@ export const Header = ({ dictionary }: HeaderProps) => {
         <div className="hidden items-center gap-3 md:flex">
           <Link
             className="border-[3px] border-transparent px-3.5 py-2 font-bold text-sm transition-colors hover:border-foreground hover:bg-accent"
-            href="/contact"
+            href={contactHref}
           >
             {dictionary.web.header.contact}
           </Link>
@@ -101,7 +104,7 @@ export const Header = ({ dictionary }: HeaderProps) => {
           ))}
           <Link
             className="border-[3px] border-transparent px-3.5 py-2.5 font-bold text-base hover:border-foreground hover:bg-accent"
-            href="/contact"
+            href={contactHref}
           >
             {dictionary.web.header.contact}
           </Link>

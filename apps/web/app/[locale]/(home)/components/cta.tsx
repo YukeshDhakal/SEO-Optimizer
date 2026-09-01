@@ -3,12 +3,14 @@ import type { Dictionary } from "@repo/internationalization";
 import { MoveRight, PhoneCall } from "lucide-react";
 import Link from "next/link";
 import { env } from "@/env";
+import { localeHref } from "@/lib/locale-href";
 
 interface CTAProps {
   dictionary: Dictionary;
+  locale: string;
 }
 
-export const CTA = ({ dictionary }: CTAProps) => (
+export const CTA = ({ dictionary, locale }: CTAProps) => (
   <div className="w-full bg-primary py-16 lg:py-20">
     <div className="container mx-auto flex flex-col items-center gap-8 px-4 text-center">
       <div className="flex flex-col gap-3">
@@ -21,7 +23,7 @@ export const CTA = ({ dictionary }: CTAProps) => (
       </div>
       <div className="flex flex-row gap-4">
         <Button asChild className="gap-2" variant="outline">
-          <Link href="/contact">
+          <Link href={localeHref(locale, "/contact")}>
             {dictionary.web.global.primaryCta}
             <PhoneCall className="h-4 w-4" />
           </Link>

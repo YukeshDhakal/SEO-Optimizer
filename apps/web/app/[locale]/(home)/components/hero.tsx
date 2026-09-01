@@ -4,12 +4,14 @@ import type { Dictionary } from "@repo/internationalization";
 import { MoveRight, PhoneCall } from "lucide-react";
 import Link from "next/link";
 import { env } from "@/env";
+import { localeHref } from "@/lib/locale-href";
 
 interface HeroProps {
   dictionary: Dictionary;
+  locale: string;
 }
 
-export const Hero = async ({ dictionary }: HeroProps) => {
+export const Hero = async ({ dictionary, locale }: HeroProps) => {
   // Always null for now - packages/cms is no longer BaseHub-schema-driven
   // (see its index.ts and PRD.md §2). Drop-in ready for a real content
   // backend later; nothing else needs to change on this page when that
@@ -24,7 +26,7 @@ export const Hero = async ({ dictionary }: HeroProps) => {
           {latestPostSlug && (
             <Link
               className="inline-flex items-center gap-2 border-[3px] border-foreground bg-accent px-3.5 py-1.5 font-bold text-sm"
-              href={`/blog/${latestPostSlug}`}
+              href={localeHref(locale, `/blog/${latestPostSlug}`)}
             >
               {dictionary.web.home.hero.announcement}
               <MoveRight className="h-4 w-4" />
@@ -40,7 +42,7 @@ export const Hero = async ({ dictionary }: HeroProps) => {
           </div>
           <div className="flex flex-row gap-4">
             <Button asChild className="gap-2" size="lg" variant="outline">
-              <Link href="/contact">
+              <Link href={localeHref(locale, "/contact")}>
                 Talk to us <PhoneCall className="h-4 w-4" />
               </Link>
             </Button>

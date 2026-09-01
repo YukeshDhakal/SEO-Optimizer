@@ -5,9 +5,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Sidebar } from "@/components/sidebar";
 import { getLegalDoc, legalSlugs } from "@/lib/legal-content";
+import { localeHref } from "@/lib/locale-href";
 
 interface LegalPageProperties {
   readonly params: Promise<{
+    locale: string;
     slug: string;
   }>;
 }
@@ -38,7 +40,7 @@ export const generateMetadata = async ({
 // of at build time, which is fine for 3 lightweight pages.
 
 const LegalPage = async ({ params }: LegalPageProperties) => {
-  const { slug } = await params;
+  const { locale, slug } = await params;
   const doc = getLegalDoc(slug);
 
   if (!doc) {
@@ -49,7 +51,7 @@ const LegalPage = async ({ params }: LegalPageProperties) => {
     <div className="container max-w-5xl px-4 py-16">
       <Link
         className="mb-4 inline-flex items-center gap-1 font-bold text-muted-foreground text-sm hover:text-primary focus:underline focus:outline-none"
-        href="/"
+        href={localeHref(locale, "/")}
       >
         <ArrowLeftIcon className="h-4 w-4" />
         Back to Home
