@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { createClient } from "../client";
@@ -72,15 +73,15 @@ export const SignUp = ({ nextUrl = "/" }: SignUpProps) => {
   };
 
   return (
-    <div className="w-full max-w-sm rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+    <div className="w-full max-w-sm border-[3px] border-foreground bg-card p-6 text-card-foreground shadow-[8px_8px_0_#111]">
       <div className="mb-6 flex flex-col gap-1">
-        <h1 className="font-semibold text-lg">Create an account</h1>
+        <h1 className="font-display text-2xl tracking-tight">CREATE AN ACCOUNT</h1>
         <p className="text-muted-foreground text-sm">
           Enter your details to get started.
         </p>
       </div>
       <button
-        className="mb-4 flex h-9 w-full items-center justify-center gap-2 rounded-md border bg-background px-4 font-medium text-sm disabled:opacity-50"
+        className="mb-4 flex h-10 w-full items-center justify-center gap-2 border-[3px] border-foreground bg-background px-4 font-bold text-sm transition-transform hover:-translate-y-0.5 disabled:opacity-50"
         disabled={isGoogleSubmitting}
         onClick={handleGoogleSignIn}
         type="button"
@@ -88,19 +89,19 @@ export const SignUp = ({ nextUrl = "/" }: SignUpProps) => {
         <GoogleGlyph />
         {isGoogleSubmitting ? "Redirecting…" : "Continue with Google"}
       </button>
-      <div className="mb-4 flex items-center gap-3 text-muted-foreground text-xs">
-        <span className="h-px flex-1 bg-border" />
+      <div className="mb-4 flex items-center gap-3 font-bold text-muted-foreground text-xs">
+        <span className="h-0.5 flex-1 bg-foreground" />
         or
-        <span className="h-px flex-1 bg-border" />
+        <span className="h-0.5 flex-1 bg-foreground" />
       </div>
       <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
         <div className="flex flex-col gap-2">
-          <label className="font-medium text-sm" htmlFor="email">
+          <label className="font-bold text-sm" htmlFor="email">
             Email
           </label>
           <input
             autoComplete="email"
-            className="h-9 rounded-md border bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="h-10 border-[3px] border-foreground bg-input px-3 text-sm outline-none focus-visible:shadow-[4px_4px_0_#2B44FF]"
             id="email"
             onChange={(event) => setEmail(event.target.value)}
             required
@@ -109,12 +110,12 @@ export const SignUp = ({ nextUrl = "/" }: SignUpProps) => {
           />
         </div>
         <div className="flex flex-col gap-2">
-          <label className="font-medium text-sm" htmlFor="password">
+          <label className="font-bold text-sm" htmlFor="password">
             Password
           </label>
           <input
             autoComplete="new-password"
-            className="h-9 rounded-md border bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="h-10 border-[3px] border-foreground bg-input px-3 text-sm outline-none focus-visible:shadow-[4px_4px_0_#2B44FF]"
             id="password"
             minLength={6}
             onChange={(event) => setPassword(event.target.value)}
@@ -123,18 +124,27 @@ export const SignUp = ({ nextUrl = "/" }: SignUpProps) => {
             value={password}
           />
         </div>
-        {error && <p className="text-destructive text-sm">{error}</p>}
+        {error && <p className="font-medium text-destructive text-sm">{error}</p>}
         {message && (
-          <p className="text-muted-foreground text-sm">{message}</p>
+          <p className="font-medium text-muted-foreground text-sm">{message}</p>
         )}
         <button
-          className="h-9 rounded-md bg-primary px-4 font-medium text-primary-foreground text-sm disabled:opacity-50"
+          className="h-10 border-[3px] border-foreground bg-primary px-4 font-bold text-primary-foreground text-sm shadow-[4px_4px_0_#111] transition-transform hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#111] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0_#111] disabled:opacity-50"
           disabled={isSubmitting}
           type="submit"
         >
           {isSubmitting ? "Creating account…" : "Create account"}
         </button>
       </form>
+      <p className="mt-5 text-center text-sm">
+        Already have an account?{" "}
+        <Link
+          className="font-bold underline hover:text-primary"
+          href={`/sign-in${nextUrl && nextUrl !== "/" ? `?next=${encodeURIComponent(nextUrl)}` : ""}`}
+        >
+          Sign in
+        </Link>
+      </p>
     </div>
   );
 };

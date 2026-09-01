@@ -1,59 +1,30 @@
-"use client";
+const MARQUEE_ITEMS = [
+  "Built for teams managing content at scale",
+  "WordPress",
+  "Webflow",
+  "Shopify",
+  "Hosted blog",
+  "Search Console",
+  "Keyword Planner",
+];
 
-import {
-  Carousel,
-  type CarouselApi,
-  CarouselContent,
-  CarouselItem,
-} from "@repo/design-system/components/ui/carousel";
-import type { Dictionary } from "@repo/internationalization";
-import { useEffect, useState } from "react";
-
-interface CasesProps {
-  dictionary: Dictionary;
-}
-
-export const Cases = ({ dictionary }: CasesProps) => {
-  const [api, setApi] = useState<CarouselApi>();
-  const [current, setCurrent] = useState(0);
-
-  useEffect(() => {
-    if (!api) {
-      return;
-    }
-
-    setTimeout(() => {
-      if (api.selectedScrollSnap() + 1 === api.scrollSnapList().length) {
-        setCurrent(0);
-        api.scrollTo(0);
-      } else {
-        api.scrollNext();
-        setCurrent(current + 1);
-      }
-    }, 1000);
-  }, [api, current]);
-
-  return (
-    <div className="w-full py-20 lg:py-40">
-      <div className="container mx-auto">
-        <div className="flex flex-col gap-10">
-          <h2 className="text-left font-regular text-xl tracking-tighter md:text-5xl lg:max-w-xl">
-            {dictionary.web.home.cases.title}
-          </h2>
-          <Carousel className="w-full" setApi={setApi}>
-            <CarouselContent>
-              {Array.from({ length: 15 }).map((_, index) => (
-                // biome-ignore lint/suspicious/noArrayIndexKey: static list
-                <CarouselItem className="basis-1/4 lg:basis-1/6" key={index}>
-                  <div className="flex aspect-square items-center justify-center rounded-md bg-muted p-6">
-                    <span className="text-sm">Logo {index + 1}</span>
-                  </div>
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-          </Carousel>
+// Matches the neobrutalism handoff's marquee strip exactly — a scrolling
+// black band between the hero and the features section. Replaces the
+// previous placeholder "Logo 1..15" carousel (never real content to begin
+// with) with the mock's actual supported-platforms strip.
+export const Cases = () => (
+  <div className="w-full overflow-hidden border-b-[3px] border-foreground bg-foreground py-4">
+    <div className="flex w-max animate-[qr-marquee_26s_linear_infinite] gap-14 whitespace-nowrap font-bold text-[15px] text-background uppercase tracking-[0.06em]">
+      {[0, 1].map((rep) => (
+        <div className="flex gap-14" key={rep}>
+          {MARQUEE_ITEMS.map((item) => (
+            <span className="flex items-center gap-14" key={item}>
+              {item}
+              <span className="text-primary">✳</span>
+            </span>
+          ))}
         </div>
-      </div>
+      ))}
     </div>
-  );
-};
+  </div>
+);

@@ -18,34 +18,33 @@ export const Hero = async ({ dictionary }: HeroProps) => {
   const latestPostSlug = latestPost?._slug;
 
   return (
-    <div className="w-full">
-      <div className="container mx-auto">
-        <div className="flex flex-col items-center justify-center gap-8 py-20 lg:py-40">
+    <div className="w-full border-b-[3px] border-foreground">
+      <div className="container mx-auto px-4">
+        <div className="flex flex-col items-center justify-center gap-7 py-16 lg:py-24">
           {latestPostSlug && (
-            <div>
-              <Button asChild className="gap-4" size="sm" variant="secondary">
-                <Link href={`/blog/${latestPostSlug}`}>
-                  {dictionary.web.home.hero.announcement}{" "}
-                  <MoveRight className="h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
+            <Link
+              className="inline-flex items-center gap-2 border-[3px] border-foreground bg-accent px-3.5 py-1.5 font-bold text-sm"
+              href={`/blog/${latestPostSlug}`}
+            >
+              {dictionary.web.home.hero.announcement}
+              <MoveRight className="h-4 w-4" />
+            </Link>
           )}
-          <div className="flex flex-col gap-4">
-            <h1 className="max-w-2xl text-center font-regular text-5xl tracking-tighter md:text-7xl">
+          <div className="flex flex-col gap-5">
+            <h1 className="font-display max-w-3xl text-center text-5xl leading-[0.96] tracking-tight md:text-7xl">
               {dictionary.web.home.meta.title}
             </h1>
-            <p className="max-w-2xl text-center text-lg text-muted-foreground leading-relaxed tracking-tight md:text-xl">
+            <p className="max-w-2xl text-center text-lg leading-relaxed md:text-xl">
               {dictionary.web.home.meta.description}
             </p>
           </div>
-          <div className="flex flex-row gap-3">
-            <Button asChild className="gap-4" size="lg" variant="outline">
+          <div className="flex flex-row gap-4">
+            <Button asChild className="gap-2" size="lg" variant="outline">
               <Link href="/contact">
                 Talk to us <PhoneCall className="h-4 w-4" />
               </Link>
             </Button>
-            <Button asChild className="gap-4" size="lg">
+            <Button asChild className="gap-2" size="lg">
               <Link href={`${env.NEXT_PUBLIC_APP_URL}/sign-up`}>
                 Start free <MoveRight className="h-4 w-4" />
               </Link>

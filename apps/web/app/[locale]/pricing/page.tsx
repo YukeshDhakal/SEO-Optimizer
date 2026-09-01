@@ -10,25 +10,52 @@ const plans = [
 ];
 
 const Pricing = () => (
-  <main className="w-full py-20 lg:py-32">
-    <section className="container mx-auto">
-      <p className="mb-3 font-medium text-muted-foreground text-sm uppercase tracking-[0.16em]">Pricing</p>
-      <h1 className="max-w-xl font-semibold text-4xl tracking-tight md:text-5xl">Priced per site, not per word.</h1>
-      <p className="mt-4 max-w-2xl text-lg text-muted-foreground leading-relaxed">Start with three free posts. Approval is required by default, and nothing publishes without a visible record of why it passed.</p>
-      <div className="mt-10 grid gap-4 lg:grid-cols-3">
+  <main className="w-full py-20 lg:py-28">
+    <section className="container mx-auto px-4">
+      <div className="flex flex-col items-start gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="mb-3 font-bold text-muted-foreground text-sm uppercase tracking-[0.16em]">Pricing</p>
+          <h1 className="font-display max-w-xl text-4xl leading-[0.98] tracking-tight md:text-6xl">
+            Priced per site, not per word.
+          </h1>
+        </div>
+        <div className="max-w-sm border-[3px] border-foreground bg-accent p-4 font-bold text-sm shadow-[6px_6px_0_#111]">
+          Start with three free posts. Nothing publishes without a visible
+          record of why it passed.
+        </div>
+      </div>
+      <div className="mt-12 grid gap-6 lg:grid-cols-3">
         {plans.map((plan) => (
-          <article className={`relative flex flex-col rounded-xl border p-6 ${plan.featured ? "border-primary shadow-sm" : ""}`} key={plan.name}>
-            {plan.featured && <span className="absolute -top-3 right-5 rounded-full bg-primary px-3 py-1 font-medium text-primary-foreground text-xs">Most agencies</span>}
-            <h2 className="font-semibold text-2xl">{plan.name}</h2>
-            <p className="mt-3 min-h-20 text-muted-foreground text-sm leading-relaxed">{plan.description}</p>
-            <p className="mt-6 font-semibold text-3xl">{plan.price}{plan.unit && <span className="ml-2 font-normal text-muted-foreground text-sm">{plan.unit}</span>}</p>
-            <Button asChild className="mt-6 gap-2" variant={plan.featured ? "default" : "outline"}>
+          <article
+            className={`relative flex flex-col border-[3px] border-foreground p-6 shadow-[8px_8px_0_#111] transition-transform hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[12px_12px_0_#111] ${plan.featured ? "bg-primary" : "bg-card"}`}
+            key={plan.name}
+          >
+            {plan.featured && (
+              <span className="-top-4 absolute right-5 border-[3px] border-foreground bg-brand-yellow px-3 py-1 font-bold text-xs uppercase tracking-[0.1em]">
+                Most agencies
+              </span>
+            )}
+            <p className="font-bold text-xs uppercase tracking-[0.14em]">{plan.name}</p>
+            <p className="font-display mt-4 text-5xl tracking-tight">{plan.price}</p>
+            {plan.unit && <p className="mt-1 font-semibold text-sm">{plan.unit}</p>}
+            <p className="mt-4 min-h-16 text-sm leading-relaxed">{plan.description}</p>
+            <Button
+              asChild
+              className="mt-6 gap-2"
+              variant={plan.featured ? "default" : "outline"}
+            >
               <Link href={plan.name === "Operations" ? "/contact" : `${env.NEXT_PUBLIC_APP_URL}/sign-up`}>
-                {plan.cta}{plan.name === "Operations" ? <PhoneCall className="h-4 w-4" /> : <MoveRight className="h-4 w-4" />}
+                {plan.cta}
+                {plan.name === "Operations" ? <PhoneCall className="h-4 w-4" /> : <MoveRight className="h-4 w-4" />}
               </Link>
             </Button>
-            <ul className="mt-7 space-y-3 border-t pt-6 text-sm">
-              {plan.items.map((item) => <li className="flex gap-2" key={item}><Check aria-hidden="true" className="mt-0.5 h-4 w-4 text-primary" />{item}</li>)}
+            <ul className="mt-7 space-y-3 border-t-[3px] border-foreground pt-6 text-sm font-medium">
+              {plan.items.map((item) => (
+                <li className="flex gap-2" key={item}>
+                  <Check aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
+                  {item}
+                </li>
+              ))}
             </ul>
           </article>
         ))}

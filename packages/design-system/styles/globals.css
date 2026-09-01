@@ -4,114 +4,81 @@
 
 @plugin "@tailwindcss/typography";
 
-@custom-variant dark (&:is(.dark *));
+/* Neobrutalism palette — replaces the cream/teal shadcn theme, sourced
+   directly from the Claude Design handoff (Quillrun Neobrutalism.dc.html):
+   thick black borders, hard offset shadows, flat saturated colors, zero
+   radius. One fixed light palette on purpose — no .dark block, no
+   next-themes wiring (see components/mode-toggle.tsx's removal). */
 
 :root {
-  --background: #f3efe7;
-  --foreground: #1c1a15;
-  --card: #fffdf9;
-  --card-foreground: #1c1a15;
-  --popover: #fffdf9;
-  --popover-foreground: #1c1a15;
-  --primary: #1c5a4a;
-  --primary-foreground: #fffdf9;
-  --secondary: #f8f4ea;
-  --secondary-foreground: #413c33;
-  --muted: #f8f4ea;
-  --muted-foreground: #7c7566;
-  --accent: #ece5d6;
-  --accent-foreground: #1c1a15;
-  --destructive: #8d2f22;
-  --destructive-foreground: #fffdf9;
-  --success: #245c3d;
-  --border: #e3dccd;
-  --input: #d5ccb8;
-  --ring: #1c5a4a;
-  --chart-1: #1c5a4a;
-  --chart-2: #26506b;
-  --chart-3: #7a5312;
-  --chart-4: #8d2f22;
-  --chart-5: #615b4f;
-  --radius: 0.625rem;
-  --sidebar: #171410;
-  --sidebar-foreground: #e6ded1;
-  --sidebar-primary: #1c5a4a;
-  --sidebar-primary-foreground: #f7f2e9;
-  --sidebar-accent: #272119;
-  --sidebar-accent-foreground: #f7f2e9;
-  --sidebar-border: #262019;
-  --sidebar-ring: #1c5a4a;
+  --background: #fffcf2;
+  --foreground: #111111;
+  --card: #ffffff;
+  --card-foreground: #111111;
+  --popover: #ffffff;
+  --popover-foreground: #111111;
+  --primary: #ff5c00;
+  --primary-foreground: #111111;
+  --secondary: #2b44ff;
+  --secondary-foreground: #ffffff;
+  --muted: #f0ede2;
+  --muted-foreground: #666666;
+  --accent: #d6f034;
+  --accent-foreground: #111111;
+  --destructive: #e8412c;
+  --destructive-foreground: #ffffff;
+  --success: #d6f034;
+  --border: #111111;
+  --input: #ffffff;
+  --ring: #2b44ff;
+  --chart-1: #ff5c00;
+  --chart-2: #2b44ff;
+  --chart-3: #d6f034;
+  --chart-4: #ffd400;
+  --chart-5: #111111;
+  --radius: 0px;
+  --sidebar: #ffe8d6;
+  --sidebar-foreground: #111111;
+  --sidebar-primary: #ff5c00;
+  --sidebar-primary-foreground: #111111;
+  --sidebar-accent: #ffd9bd;
+  --sidebar-accent-foreground: #111111;
+  --sidebar-border: #111111;
+  --sidebar-ring: #2b44ff;
 
-  --status-success-bg: #e5efe2;
-  --status-success-fg: #245c3d;
-  --status-info-bg: #e4ecf2;
-  --status-info-fg: #26506b;
-  --status-warning-bg: #f7edd6;
-  --status-warning-fg: #7a5312;
-  --status-neutral-bg: #e5e0d5;
-  --status-neutral-fg: #413c33;
-  --status-error-bg: #f7e6e1;
-  --status-error-fg: #8d2f22;
-  --status-muted-bg: #e9e2d3;
-  --status-muted-fg: #615b4f;
+  /* Bg/fg pairs per state, matched directly to the mock's own badge colors
+     (RUNNING=orange, PUBLISHED=lime, NEEDS YOU=yellow, FAILED CLOSED=black/
+     cream) — status-pill.tsx keeps its existing glyph+color mapping and
+     only drops the per-state corner-radius differentiation (see that
+     file's own comment). */
+  --status-success-bg: #d6f034;
+  --status-success-fg: #111111;
+  --status-info-bg: #ff5c00;
+  --status-info-fg: #111111;
+  --status-warning-bg: #ffd400;
+  --status-warning-fg: #111111;
+  --status-neutral-bg: #fffcf2;
+  --status-neutral-fg: #666666;
+  --status-error-bg: #111111;
+  --status-error-fg: #fffcf2;
+  --status-muted-bg: #fffcf2;
+  --status-muted-fg: #666666;
 
   --font-weight-bold: 700;
-}
-
-.dark {
-  --background: #171410;
-  --foreground: #e6ded1;
-  --card: #1e1a14;
-  --card-foreground: #e6ded1;
-  --popover: #1e1a14;
-  --popover-foreground: #e6ded1;
-  --primary: #2a7860;
-  --primary-foreground: #f7f2e9;
-  --secondary: #262019;
-  --secondary-foreground: #e6ded1;
-  --muted: #262019;
-  --muted-foreground: #a39a8a;
-  --accent: #272119;
-  --accent-foreground: #f7f2e9;
-  --destructive: #d98a7e;
-  --destructive-foreground: #1c1a15;
-  --success: #7fb89a;
-  --border: #2c261d;
-  --input: #2c261d;
-  --ring: #2a7860;
-  --chart-1: #2a7860;
-  --chart-2: #7fa9c4;
-  --chart-3: #dda869;
-  --chart-4: #d98a7e;
-  --chart-5: #a39a8a;
-  --sidebar: #171410;
-  --sidebar-foreground: #e6ded1;
-  --sidebar-primary: #2a7860;
-  --sidebar-primary-foreground: #f7f2e9;
-  --sidebar-accent: #272119;
-  --sidebar-accent-foreground: #f7f2e9;
-  --sidebar-border: #262019;
-  --sidebar-ring: #2a7860;
-
-  --status-success-bg: #1c2e24;
-  --status-success-fg: #7fb89a;
-  --status-info-bg: #1b2733;
-  --status-info-fg: #7fa9c4;
-  --status-warning-bg: #332812;
-  --status-warning-fg: #dda869;
-  --status-neutral-bg: #262019;
-  --status-neutral-fg: #d2c8b8;
-  --status-error-bg: #331f1a;
-  --status-error-fg: #d98a7e;
-  --status-muted-bg: #262019;
-  --status-muted-fg: #a39a8a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-ibm-plex-sans);
-  --font-mono: var(--font-ibm-plex-mono);
+  --font-sans: var(--font-space-grotesk);
+  --font-display: var(--font-archivo-black);
+  /* No custom mono font in the mock — the RUN LOG panel just uses
+     `ui-monospace,monospace` (system stack), not a loaded webfont. */
+  --font-mono: ui-monospace, "SFMono-Regular", Consolas, monospace;
+  --color-brand-orange: #ff5c00;
+  --color-brand-lime: #d6f034;
+  --color-brand-blue: #2b44ff;
+  --color-brand-yellow: #ffd400;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -154,12 +121,14 @@
   --color-status-error-fg: var(--status-error-fg);
   --color-status-muted-bg: var(--status-muted-bg);
   --color-status-muted-fg: var(--status-muted-fg);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-qr-marquee: qr-marquee 26s linear infinite;
+  --animate-qr-pulse: qr-pulse 1.6s ease-in-out infinite;
 
   @keyframes accordion-down {
     from {
@@ -176,6 +145,25 @@
     }
     to {
       height: 0;
+    }
+  }
+
+  @keyframes qr-marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  @keyframes qr-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.35;
     }
   }
 }

@@ -36,23 +36,26 @@ const BlogIndex = async ({ params }: BlogProps) => {
   return (
     <>
       <JsonLd code={jsonLd} />
-      <div className="w-full py-20 lg:py-40">
-        <div className="container mx-auto flex flex-col gap-14">
-          <div className="flex w-full flex-col gap-8 sm:flex-row sm:items-center sm:justify-between">
-            <h4 className="max-w-xl font-regular text-3xl tracking-tighter md:text-5xl">
-              {dictionary.web.blog.meta.title}
-            </h4>
+      <div className="w-full border-b-[3px] border-foreground py-16 lg:py-20">
+        <div className="container mx-auto flex flex-col gap-10 px-4">
+          <div className="flex items-baseline gap-4">
+            <h1 className="font-display text-5xl tracking-tight md:text-7xl">
+              WRITING
+            </h1>
+            <span className="border-[3px] border-foreground bg-secondary px-3.5 py-1.5 font-bold text-secondary-foreground text-sm">
+              Field notes from the pipeline
+            </span>
           </div>
           {posts.length === 0 ? (
-            <p className="text-muted-foreground">
+            <p className="font-medium text-muted-foreground">
               No posts yet — check back soon.
             </p>
           ) : (
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               {posts.map((post, index) => (
                 <Link
                   className={cn(
-                    "flex cursor-pointer flex-col gap-4 hover:opacity-75",
+                    "flex cursor-pointer flex-col gap-4 border-[3px] border-foreground bg-card shadow-[8px_8px_0_#111] transition-transform hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[12px_12px_0_#111]",
                     !index && "md:col-span-2"
                   )}
                   href={`/blog/${post._slug}`}
@@ -60,23 +63,22 @@ const BlogIndex = async ({ params }: BlogProps) => {
                 >
                   <Image
                     alt={post.image.alt ?? ""}
+                    className="border-b-[3px] border-foreground"
                     height={post.image.height}
                     src={post.image.url}
                     width={post.image.width}
                   />
-                  <div className="flex flex-row items-center gap-4">
-                    <p className="text-muted-foreground text-sm">
+                  <div className="flex flex-col gap-2 px-6 pb-6">
+                    <p className="font-bold text-muted-foreground text-sm">
                       {new Date(post.date).toLocaleDateString("en-US", {
                         month: "long",
                         day: "numeric",
                         year: "numeric",
                       })}
                     </p>
-                  </div>
-                  <div className="flex flex-col gap-2">
-                    <h3 className="max-w-3xl text-4xl tracking-tight">
+                    <h2 className="font-display max-w-3xl text-2xl leading-tight tracking-tight">
                       {post._title}
-                    </h3>
+                    </h2>
                     <p className="max-w-3xl text-base text-muted-foreground">
                       {post.description}
                     </p>

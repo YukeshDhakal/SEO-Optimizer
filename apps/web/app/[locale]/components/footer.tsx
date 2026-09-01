@@ -3,108 +3,70 @@ import Link from "next/link";
 import { env } from "@/env";
 import { legalDocs, legalSlugs } from "@/lib/legal-content";
 
+// Matches the neobrutalism handoff's footer exactly: black section, cream
+// text, three columns (brand+tagline / Pages / Legal), uppercase
+// letter-spaced micro-labels above each link column.
 export const Footer = () => {
-  const navigationItems = [
-    {
-      title: "Home",
-      href: "/",
-      description: "",
-    },
-    {
-      title: "Pages",
-      description: "An SEO and GEO writer that publishes to your site on its own.",
-      items: [
-        {
-          title: "Blog",
-          href: "/blog",
-        },
-      ],
-    },
-    {
-      title: "Legal",
-      description: "We stay on top of the latest legal requirements.",
-      items: legalSlugs.map((slug) => ({
-        title: legalDocs[slug].title,
-        href: `/legal/${slug}`,
-      })),
-    },
+  const pageLinks = [
+    { title: "Home", href: "/" },
+    { title: "Writing", href: "/blog" },
+    { title: "Pricing", href: "/pricing" },
+    ...(env.NEXT_PUBLIC_DOCS_URL
+      ? [{ title: "Docs", href: env.NEXT_PUBLIC_DOCS_URL }]
+      : []),
   ];
 
-  if (env.NEXT_PUBLIC_DOCS_URL) {
-    navigationItems.at(1)?.items?.push({
-      title: "Docs",
-      href: env.NEXT_PUBLIC_DOCS_URL,
-    });
-  }
+  const legalLinks = legalSlugs.map((slug) => ({
+    title: legalDocs[slug].title,
+    href: `/legal/${slug}`,
+  }));
 
   return (
-    <section className="dark border-foreground/10 border-t">
-      <div className="w-full bg-background py-20 text-foreground lg:py-40">
-        <div className="container mx-auto">
-          <div className="grid items-center gap-10 lg:grid-cols-2">
-            <div className="flex flex-col items-start gap-8">
-              <div className="flex flex-col gap-2">
-                <h2 className="max-w-xl text-left font-regular text-3xl tracking-tighter md:text-5xl">
-                  Quillrun
-                </h2>
-                <p className="max-w-lg text-left text-foreground/75 text-lg leading-relaxed tracking-tight">
-                  Autonomous content operations for small teams and the
-                  agencies that run them.
-                </p>
-              </div>
-              <Status />
-            </div>
-            <div className="grid items-start gap-10 lg:grid-cols-3">
-              {navigationItems.map((item) => (
-                <div
-                  className="flex flex-col items-start gap-1 text-base"
-                  key={item.title}
-                >
-                  <div className="flex flex-col gap-2">
-                    {item.href ? (
-                      <Link
-                        className="flex items-center justify-between"
-                        href={item.href}
-                        rel={
-                          item.href.includes("http")
-                            ? "noopener noreferrer"
-                            : undefined
-                        }
-                        target={
-                          item.href.includes("http") ? "_blank" : undefined
-                        }
-                      >
-                        <span className="text-xl">{item.title}</span>
-                      </Link>
-                    ) : (
-                      <p className="text-xl">{item.title}</p>
-                    )}
-                    {item.items?.map((subItem) => (
-                      <Link
-                        className="flex items-center justify-between"
-                        href={subItem.href}
-                        key={subItem.title}
-                        rel={
-                          subItem.href.includes("http")
-                            ? "noopener noreferrer"
-                            : undefined
-                        }
-                        target={
-                          subItem.href.includes("http") ? "_blank" : undefined
-                        }
-                      >
-                        <span className="text-foreground/75">
-                          {subItem.title}
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+    <footer className="bg-foreground text-background">
+      <div className="container mx-auto grid gap-10 px-4 py-14 md:grid-cols-[1.4fr_1fr_1fr]">
+        <div className="flex flex-col gap-3">
+          <span className="font-display text-2xl tracking-tight">
+            QUILLRUN
+          </span>
+          <p className="max-w-sm text-background/70 text-sm leading-relaxed">
+            Autonomous content operations for small teams and the agencies
+            that run them.
+          </p>
+          <div className="mt-2">
+            <Status />
           </div>
         </div>
+        <div className="flex flex-col gap-2.5 text-sm">
+          <span className="text-[12px] text-background/50 uppercase tracking-[0.14em]">
+            Pages
+          </span>
+          {pageLinks.map((item) => (
+            <Link
+              className="font-semibold text-background hover:text-primary"
+              href={item.href}
+              key={item.title}
+              rel={item.href.startsWith("http") ? "noopener noreferrer" : undefined}
+              target={item.href.startsWith("http") ? "_blank" : undefined}
+            >
+              {item.title}
+            </Link>
+          ))}
+        </div>
+        <div className="flex flex-col gap-2.5 text-sm">
+          <span className="text-[12px] text-background/50 uppercase tracking-[0.14em]">
+            Legal
+          </span>
+          {legalLinks.map((item) => (
+            <Link
+              className="font-semibold text-background hover:text-primary"
+              href={item.href}
+              key={item.title}
+            >
+              {item.title}
+            </Link>
+          ))}
+        </div>
       </div>
-    </section>
+    </footer>
   );
 };

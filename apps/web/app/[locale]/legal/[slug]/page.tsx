@@ -46,15 +46,15 @@ const LegalPage = async ({ params }: LegalPageProperties) => {
   }
 
   return (
-    <div className="container max-w-5xl py-16">
+    <div className="container max-w-5xl px-4 py-16">
       <Link
-        className="mb-4 inline-flex items-center gap-1 text-muted-foreground text-sm focus:underline focus:outline-none"
+        className="mb-4 inline-flex items-center gap-1 font-bold text-muted-foreground text-sm hover:text-primary focus:underline focus:outline-none"
         href="/"
       >
         <ArrowLeftIcon className="h-4 w-4" />
         Back to Home
       </Link>
-      <h1 className="scroll-m-20 text-balance font-extrabold text-4xl tracking-tight lg:text-5xl">
+      <h1 className="font-display scroll-m-20 text-balance text-4xl tracking-tight lg:text-6xl">
         {doc.title}
       </h1>
       <p className="text-balance leading-7 [&:not(:first-child)]:mt-6">
