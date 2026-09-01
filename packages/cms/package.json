@@ -3,18 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "basehub dev",
     "build": "echo 'no-op: not BaseHub-schema-driven, see index.ts'",
-    "analyze": "basehub",
     "clean": "git clean -xdf .cache .turbo dist node_modules",
     "typecheck": "tsc --noEmit --emitDeclarationOnly false"
   },
-  "dependencies": {
-    "@t3-oss/env-nextjs": "^0.13.10",
-    "basehub": "^9.5.3",
-    "react": "19.2.4",
-    "zod": "^4.3.6"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@repo/typescript-config": "*",
     "@types/node": "25.3.5",

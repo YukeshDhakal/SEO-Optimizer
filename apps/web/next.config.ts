@@ -1,5 +1,3 @@
-// touch: force rebuild after BASEHUB_TOKEN was replaced with a token for the new blueprint-based repo
-import { withCMS } from "@repo/cms/next-config";
 import { withToolbar } from "@repo/feature-flags/lib/toolbar";
 import { config, withAnalyzer } from "@repo/next-config";
 import { withLogging, withSentry } from "@repo/observability/next-config";
@@ -14,11 +12,6 @@ nextConfig.turbopack = {
   ...nextConfig.turbopack,
   root: workspaceRoot,
 };
-
-nextConfig.images?.remotePatterns?.push({
-  protocol: "https",
-  hostname: "assets.basehub.com",
-});
 
 const redirects: NextConfig["redirects"] = async () => [
   {
@@ -38,7 +31,7 @@ if (env.ANALYZE === "true") {
   nextConfig = withAnalyzer(nextConfig);
 }
 
-export default withCMS(nextConfig);
+export default nextConfig;
 
 // vercel-deploy-trigger: initial production deploy 2026-08-29
 import { dirname, resolve } from "node:path";

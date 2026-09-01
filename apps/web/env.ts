@@ -1,5 +1,4 @@
 import { keys as auth } from "@repo/auth/keys";
-import { keys as cms } from "@repo/cms/keys";
 import { keys as cmsAdapters } from "@repo/cms-adapters/keys";
 import { keys as database } from "@repo/database/keys";
 import { keys as email } from "@repo/email/keys";
@@ -14,7 +13,6 @@ export const env = createEnv({
   skipValidation: process.env.SKIP_ENV_VALIDATION === "true",
   extends: [
     auth(),
-    cms(),
     cmsAdapters(),
     core(),
     database(),
