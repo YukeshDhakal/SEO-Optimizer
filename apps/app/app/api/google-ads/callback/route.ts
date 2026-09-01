@@ -82,12 +82,19 @@ export const GET = async (request: Request): Promise<Response> => {
     return NextResponse.redirect(siteUrl(siteConnectionId, "error"));
   }
 
+  // Tokens are saved either way even if this call fails — the site page's
+  // picker can retry listAccessibleCustomers itself. But the failure reason
+  // (e.g. an unset/invalid developer-token header, a 403 from a developer
+  // token with no access to any customer) used to be discarded entirely
+  // here, leaving status='error' with zero detail — indistinguishable from
+  // "this Google account genuinely has zero accessible Ads accounts". Now
+  // captured into `listError` and persisted below either way.
   let customers: Awaited<ReturnType<typeof listAccessibleCustomers>> = [];
+  let listError: string | null = null;
   try {
     customers = await listAccessibleCustomers(tokens.accessToken);
-  } catch {
-    // Tokens are saved either way — the site page's picker can retry
-    // listAccessibleCustomers itself; no need to fail the whole connect over this.
+  } catch (error) {
+    listError = error instanceof Error ? error.message : String(error);
   }
 
   if (customers.length === 1) {
@@ -96,6 +103,7 @@ export const GET = async (request: Request): Promise<Response> => {
       .update({
         google_ads_customer_id: customers[0].customerId,
         status: "connected",
+        error_message: null,
       })
       .eq("site_connection_id", siteConnectionId);
     return NextResponse.redirect(siteUrl(siteConnectionId, "connected"));
@@ -104,7 +112,12 @@ export const GET = async (request: Request): Promise<Response> => {
   if (customers.length === 0) {
     await supabase
       .from("google_ads_credentials")
-      .update({ status: "error" })
+      .update({
+        status: "error",
+        error_message:
+          listError ??
+          "Google returned zero Ads accounts accessible to this Google login.",
+      })
       .eq("site_connection_id", siteConnectionId);
     return NextResponse.redirect(siteUrl(siteConnectionId, "no-accounts"));
   }

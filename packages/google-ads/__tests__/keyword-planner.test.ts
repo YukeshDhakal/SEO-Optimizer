@@ -53,6 +53,39 @@ describe("listAccessibleCustomers", () => {
       /HTTP 401/
     );
   });
+
+  // Regression test: this used to throw only "HTTP 401" with no further
+  // detail, which is why an unset/invalid developer-token header and a
+  // genuine "zero accessible accounts" response were indistinguishable in
+  // the callback route and, from there, in the site page's UI.
+  it("includes Google's own error message and status in the thrown error", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          error: {
+            code: 401,
+            message: "Request had invalid authentication credentials.",
+            status: "UNAUTHENTICATED",
+          },
+        }),
+        { status: 401 }
+      )
+    );
+
+    await expect(listAccessibleCustomers("bad-token")).rejects.toThrow(
+      /HTTP 401.*\[UNAUTHENTICATED\].*invalid authentication credentials/
+    );
+  });
+
+  it("falls back to just the HTTP status when the error body isn't JSON", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response("<html>502 Bad Gateway</html>", { status: 502 })
+    );
+
+    await expect(listAccessibleCustomers("bad-token")).rejects.toThrow(
+      "Google Ads API error (HTTP 502)."
+    );
+  });
 });
 
 describe("generateKeywordHistoricalMetrics", () => {

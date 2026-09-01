@@ -58,8 +58,12 @@ export const fetchGoogleAdsAccounts = async (
       return { error: "This Google account has no accessible Ads accounts." };
     }
     return { accounts };
-  } catch {
-    return { error: "Couldn't reach Google Ads." };
+  } catch (error) {
+    // Surface the real reason (e.g. an unset/invalid developer-token header)
+    // instead of a generic message — this is exactly the kind of failure
+    // that's otherwise invisible until someone reproduces it live.
+    const message = error instanceof Error ? error.message : String(error);
+    return { error: `Couldn't reach Google Ads: ${message}` };
   }
 };
 

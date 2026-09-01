@@ -29,7 +29,26 @@ const adsFetch = async <T>(
   });
 
   if (!response.ok) {
-    throw new Error(`Google Ads API error (HTTP ${response.status}).`);
+    // Google Ads API v17 REST errors are JSON: { error: { code, message,
+    // status, details: [...] } } — surfacing `message` here is what makes
+    // "no accessible accounts" distinguishable from "the developer-token
+    // header was empty/invalid" (401 UNAUTHENTICATED) or "this developer
+    // token doesn't have access to this customer" (403 PERMISSION_DENIED)
+    // instead of every failure looking identical. Falls back to just the
+    // HTTP status if the body isn't the expected shape (e.g. an upstream
+    // 5xx with an HTML error page).
+    let detail = "";
+    try {
+      const body = (await response.json()) as {
+        error?: { message?: string; status?: string };
+      };
+      if (body.error?.message) {
+        detail = ` ${body.error.status ? `[${body.error.status}] ` : ""}${body.error.message}`;
+      }
+    } catch {
+      // Body wasn't JSON — fall through with just the HTTP status.
+    }
+    throw new Error(`Google Ads API error (HTTP ${response.status}).${detail}`);
   }
   return (await response.json()) as T;
 };
