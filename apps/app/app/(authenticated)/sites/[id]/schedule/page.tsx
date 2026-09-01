@@ -49,7 +49,7 @@ const SchedulePage = async ({ params }: SchedulePageProperties) => {
   return (
     <div className="flex flex-1 flex-col gap-5 p-6">
       <div>
-        <h1 className="font-semibold text-2xl tracking-tight">Schedule</h1>
+        <h1 className="font-display text-3xl tracking-tight">SCHEDULE</h1>
         <p className="mt-1 max-w-xl text-muted-foreground text-sm">
           When the agent starts runs on its own for {site.display_name}.
           Organization limits still apply and always win.
@@ -58,13 +58,13 @@ const SchedulePage = async ({ params }: SchedulePageProperties) => {
 
       <SiteTabs siteId={id} />
 
-      <div className="rounded-md border bg-card">
-        <div className="border-b px-5 py-3.5 font-semibold text-sm">
-          Recurring generation
+      <div className="border-[3px] border-foreground bg-card shadow-[6px_6px_0_#111]">
+        <div className="border-foreground border-b-[3px] px-5 py-3.5 font-display text-base tracking-tight">
+          RECURRING GENERATION
         </div>
         <div className="px-5">
           {schedules && schedules.length > 0 ? (
-            <div className="flex flex-col divide-y">
+            <div className="flex flex-col divide-y-2 divide-foreground">
               {schedules.map((schedule) => (
                 <div
                   className="flex flex-wrap items-center justify-between gap-3 py-3.5"
@@ -130,8 +130,8 @@ const SchedulePage = async ({ params }: SchedulePageProperties) => {
       </div>
 
       {canManage && (
-        <div className="rounded-md border bg-card p-5">
-          <h2 className="mb-4 font-semibold text-sm">New schedule</h2>
+        <div className="border-[3px] border-foreground bg-card p-5 shadow-[6px_6px_0_#111]">
+          <h2 className="mb-4 font-display text-base tracking-tight">NEW SCHEDULE</h2>
           <NewScheduleForm
             organizationId={organization.id}
             siteConnectionId={id}

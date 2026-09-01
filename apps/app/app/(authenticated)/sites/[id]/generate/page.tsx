@@ -36,9 +36,7 @@ const GeneratePage = async ({ params }: GeneratePageProperties) => {
   return (
     <div className="flex flex-1 flex-col gap-5 p-6">
       <div>
-        <h1 className="font-semibold text-2xl tracking-tight">
-          Generate a post
-        </h1>
+        <h1 className="font-display text-3xl tracking-tight">GENERATE A POST</h1>
         <p className="mt-1 max-w-xl text-muted-foreground text-sm">
           Give the agent a topic or keyword. It researches, outlines,
           drafts, then has to pass a quality gate and a policy check before
@@ -48,7 +46,7 @@ const GeneratePage = async ({ params }: GeneratePageProperties) => {
 
       <SiteTabs siteId={id} />
 
-      <div className="rounded-md border bg-card p-5">
+      <div className="border-[3px] border-foreground bg-card p-5 shadow-[6px_6px_0_#111]">
         <GeneratePostForm siteConnectionId={id} />
       </div>
     </div>

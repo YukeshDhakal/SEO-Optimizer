@@ -46,14 +46,14 @@ export const SiteTabs = ({ siteId }: SiteTabsProps) => {
   })();
 
   return (
-    <div className="mb-5 flex flex-wrap items-center gap-1 border-b">
+    <div className="mb-5 flex flex-wrap items-center gap-1.5 border-foreground border-b-[3px] pb-2">
       {TABS.map((tab) => (
         <Link
           className={cn(
-            "-mb-px border-b-2 px-3 py-2 font-medium text-sm",
+            "border-[3px] px-3 py-1.5 font-bold text-sm",
             active === tab.key
-              ? "border-primary text-foreground"
-              : "border-transparent text-muted-foreground hover:text-foreground"
+              ? "border-foreground bg-primary text-primary-foreground"
+              : "border-transparent text-muted-foreground hover:border-foreground hover:bg-accent hover:text-foreground"
           )}
           href={tab.key ? `${base}/${tab.key}` : base}
           key={tab.key}

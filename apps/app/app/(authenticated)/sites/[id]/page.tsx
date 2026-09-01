@@ -110,7 +110,7 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
       .limit(5),
     supabase
       .from("google_ads_credentials")
-      .select("status, google_ads_customer_id")
+      .select("status, google_ads_customer_id, error_message")
       .eq("site_connection_id", site.id)
       .maybeSingle(),
     supabase
@@ -165,11 +165,11 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
 
   return (
     <div className="flex flex-1 flex-col gap-5 p-6">
-      <div className="rounded-md border bg-card p-5">
+      <div className="border-[3px] border-foreground bg-card p-5 shadow-[6px_6px_0_#111]">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex flex-wrap items-center gap-2.5">
-              <h1 className="font-semibold text-xl tracking-tight">
+              <h1 className="font-display text-2xl tracking-tight">
                 {site.display_name}
               </h1>
               <StatusPill status={site.status === "connected" ? "ok" : "await"}>
@@ -218,7 +218,7 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
         // manual pause via the toggle above resets the failure count to 0,
         // so this combination reliably means "auto-paused", not "an admin
         // chose to pause this."
-        <div className="flex items-center justify-between gap-4 rounded-md border border-status-error-fg/25 bg-status-error-bg px-4 py-3 text-sm text-status-error-fg">
+        <div className="flex items-center justify-between gap-4 border-[3px] border-foreground bg-status-error-bg px-4 py-3 font-medium text-sm text-status-error-fg">
           <p>
             <strong>Automatically paused</strong> after{" "}
             {site.consecutive_publish_failures} consecutive publish
@@ -232,11 +232,11 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {siteStats.map((s) => (
-          <div className="rounded-md border bg-card p-3.5" key={s.label}>
+          <div className="border-[3px] border-foreground bg-card p-3.5 shadow-[5px_5px_0_#111]" key={s.label}>
             <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
               {s.label}
             </div>
-            <div className="mt-2 font-semibold text-2xl tracking-tight">
+            <div className="mt-2 font-display text-2xl tracking-tight">
               {s.value}
             </div>
           </div>
@@ -244,9 +244,9 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.35fr_1fr]">
-        <div className="rounded-md border bg-card">
+        <div className="border-[3px] border-foreground bg-card">
           <div className="flex items-center justify-between border-b px-4 py-3">
-            <span className="font-semibold text-sm">Recent runs</span>
+            <span className="font-display text-base tracking-tight">RECENT RUNS</span>
             <Link
               className="font-medium text-primary text-xs hover:underline"
               href={`/sites/${site.id}/runs`}
@@ -295,7 +295,7 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
       {canManage && (
         <div className="flex flex-col gap-4">
           <div>
-            <h2 className="mb-3 font-mono text-[11px] text-muted-foreground uppercase tracking-widest">
+            <h2 className="mb-3 font-bold text-[11px] text-muted-foreground uppercase tracking-widest">
               Connections
             </h2>
             <div className="flex flex-col gap-4">
@@ -340,6 +340,7 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
                           | "error",
                         googleAdsCustomerId:
                           googleAdsCredentials.google_ads_customer_id,
+                        errorMessage: googleAdsCredentials.error_message,
                       }
                     : null
                 }
@@ -348,8 +349,8 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
             </div>
           </div>
 
-          <div className="rounded-md border border-status-error-fg/25 bg-status-error-bg/40 p-4">
-            <h2 className="mb-1 font-semibold text-sm">Danger zone</h2>
+          <div className="border-[3px] border-foreground bg-status-error-bg p-4">
+            <h2 className="mb-1 font-display text-base tracking-tight">DANGER ZONE</h2>
             <p className="mb-3 text-muted-foreground text-xs">
               Deleting a site removes it and its history. This cannot be
               undone.

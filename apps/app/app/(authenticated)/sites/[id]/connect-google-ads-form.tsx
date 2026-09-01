@@ -26,6 +26,7 @@ interface ConnectGoogleAdsFormProperties {
   readonly credentials: {
     status: "pending" | "connected" | "error";
     googleAdsCustomerId: string | null;
+    errorMessage?: string | null;
   } | null;
   readonly cachedKeywords: {
     keyword: string;
@@ -94,7 +95,7 @@ export const ConnectGoogleAdsForm = ({
             </div>
           )}
           {disconnectState.error && (
-            <p className="text-destructive text-sm">{disconnectState.error}</p>
+            <p className="font-medium text-destructive text-sm">{disconnectState.error}</p>
           )}
           <form action={disconnectAction}>
             <input
@@ -135,7 +136,7 @@ export const ConnectGoogleAdsForm = ({
                 them to pick which one grounds keyword research for this site.
               </p>
               {fetchState.error && (
-                <p className="text-destructive text-sm">{fetchState.error}</p>
+                <p className="font-medium text-destructive text-sm">{fetchState.error}</p>
               )}
               <Button
                 className="self-start"
@@ -153,7 +154,7 @@ export const ConnectGoogleAdsForm = ({
                 value={siteConnectionId}
               />
               <select
-                className="h-9 rounded-md border bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-10 border-[3px] border-foreground bg-input px-3 font-bold text-sm outline-none focus-visible:shadow-[4px_4px_0_#2B44FF]"
                 name="google_ads_customer_id"
                 onChange={(event) => setSelectedAccount(event.target.value)}
                 value={selectedAccount || accounts[0]?.customerId}
@@ -165,7 +166,7 @@ export const ConnectGoogleAdsForm = ({
                 ))}
               </select>
               {selectState.error && (
-                <p className="text-destructive text-sm">{selectState.error}</p>
+                <p className="font-medium text-destructive text-sm">{selectState.error}</p>
               )}
               <Button
                 className="self-start"
@@ -192,12 +193,13 @@ export const ConnectGoogleAdsForm = ({
           against real Keyword Planner search volume before publishing.
         </p>
         {credentials?.status === "error" && (
-          <p className="text-destructive text-sm">
-            The last connection attempt failed — try again.
+          <p className="font-medium text-destructive text-sm">
+            The last connection attempt failed
+            {credentials.errorMessage ? `: ${credentials.errorMessage}` : " — try again."}
           </p>
         )}
         {connectState.error && (
-          <p className="text-destructive text-sm">{connectState.error}</p>
+          <p className="font-medium text-destructive text-sm">{connectState.error}</p>
         )}
         <form action={connectAction}>
           <input

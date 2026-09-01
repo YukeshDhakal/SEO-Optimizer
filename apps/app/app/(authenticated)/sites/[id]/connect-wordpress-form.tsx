@@ -61,10 +61,10 @@ export const ConnectWordPressForm = ({
             </p>
           </div>
           {state.error && (
-            <p className="text-destructive text-sm">{state.error}</p>
+            <p className="font-medium text-destructive text-sm">{state.error}</p>
           )}
           {state.success && (
-            <p className="text-sm text-emerald-600 dark:text-emerald-400">
+            <p className="font-bold text-sm text-status-success-fg">
               Connected.
             </p>
           )}

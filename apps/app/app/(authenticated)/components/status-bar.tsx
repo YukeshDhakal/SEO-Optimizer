@@ -62,22 +62,20 @@ export const StatusBar = ({
   return (
     <div
       className={cn(
-        "sticky top-0 z-10 flex min-h-[54px] flex-wrap items-center gap-3.5 border-b px-6",
-        paused
-          ? "border-status-warning-fg/25 bg-status-warning-bg"
-          : "border-border bg-background"
+        "sticky top-0 z-10 flex min-h-[56px] flex-wrap items-center gap-3.5 border-foreground border-b-[3px] px-6",
+        paused ? "bg-status-warning-bg" : "bg-background"
       )}
     >
       <span
         className={cn(
-          "size-2.5 shrink-0 rounded-full",
-          paused ? "bg-status-warning-fg" : "animate-pulse bg-status-info-fg"
+          "size-2.5 shrink-0 border border-foreground",
+          paused ? "bg-status-warning-fg" : "animate-[qr-pulse_1.6s_ease-in-out_infinite] bg-status-info-fg"
         )}
       />
       <div className="flex flex-col gap-0.5">
         <span
           className={cn(
-            "font-semibold text-[12.5px] leading-tight",
+            "font-bold text-[12.5px] leading-tight",
             paused ? "text-status-warning-fg" : "text-foreground"
           )}
         >
@@ -90,26 +88,22 @@ export const StatusBar = ({
       <div className="flex-1" />
       <div
         className={cn(
-          "flex items-center gap-1.5 rounded-md border px-2.5 py-1",
-          requireApproval
-            ? "border-primary/25 bg-primary/10 text-primary"
-            : "border-status-warning-fg/30 bg-status-warning-bg text-status-warning-fg"
+          "flex items-center gap-1.5 border-2 border-foreground px-2.5 py-1 font-bold",
+          requireApproval ? "bg-accent" : "bg-status-warning-bg text-status-warning-fg"
         )}
       >
         <span className="font-mono text-[10px] leading-none">
           {requireApproval ? "◎" : "⚠"}
         </span>
-        <span className="font-medium text-[11.5px]">
+        <span className="text-[11.5px]">
           {requireApproval ? "Approval required" : "Publishing without review"}
         </span>
       </div>
       {canManage && (
         <Button
           className={cn(
-            "h-8 gap-1.5 font-semibold text-[12.5px]",
-            paused
-              ? "bg-primary text-primary-foreground hover:bg-primary/90"
-              : "border-status-error-fg/30 bg-background text-status-error-fg hover:bg-status-error-bg"
+            "h-9 gap-1.5",
+            paused ? "" : "border-foreground bg-foreground text-background shadow-[3px_3px_0_#FF5C00] hover:shadow-[5px_5px_0_#FF5C00]"
           )}
           disabled={isPending}
           onClick={handleToggle}
@@ -123,7 +117,7 @@ export const StatusBar = ({
         </Button>
       )}
       {error && (
-        <p className="w-full text-status-error-fg text-xs">{error}</p>
+        <p className="w-full font-medium text-status-error-fg text-xs">{error}</p>
       )}
     </div>
   );

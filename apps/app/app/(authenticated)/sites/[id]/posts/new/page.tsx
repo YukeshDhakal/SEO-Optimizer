@@ -36,9 +36,7 @@ const NewPostPage = async ({ params }: NewPostPageProperties) => {
   return (
     <div className="flex flex-1 flex-col gap-5 p-6">
       <div>
-        <h1 className="font-semibold text-2xl tracking-tight">
-          Publish now
-        </h1>
+        <h1 className="font-display text-3xl tracking-tight">PUBLISH NOW</h1>
         <p className="mt-1 max-w-xl text-muted-foreground text-sm">
           Write it yourself and push it straight to {site.display_name}.
           This skips the agent entirely, so no quality gate and no policy
@@ -48,7 +46,7 @@ const NewPostPage = async ({ params }: NewPostPageProperties) => {
 
       <SiteTabs siteId={id} />
 
-      <div className="rounded-md border bg-card p-5">
+      <div className="border-[3px] border-foreground bg-card p-5 shadow-[6px_6px_0_#111]">
         <NewPostForm siteConnectionId={id} />
       </div>
     </div>

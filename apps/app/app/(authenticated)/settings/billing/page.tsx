@@ -44,7 +44,7 @@ const BillingPage = async () => {
   return (
     <div className="flex flex-1 flex-col gap-6 p-4">
       <div>
-        <h1 className="font-semibold text-2xl">Billing</h1>
+        <h1 className="font-display text-3xl tracking-tight">BILLING</h1>
         <p className="text-muted-foreground text-sm">{organization.name}</p>
       </div>
 
@@ -85,7 +85,7 @@ const BillingPage = async () => {
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           {(plans ?? []).map((plan) => (
-            <div className="flex items-center justify-between rounded-md border p-3" key={plan.id}>
+            <div className="flex items-center justify-between border-[3px] border-foreground p-3" key={plan.id}>
               <div>
                 <p className="font-medium">{plan.name}</p>
                 <p className="text-muted-foreground text-sm">

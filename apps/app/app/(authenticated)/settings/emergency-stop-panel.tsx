@@ -12,11 +12,12 @@ interface EmergencyStopPanelProps {
   readonly awaitingApprovalCount: number;
 }
 
-// Deliberately dark regardless of theme (bg-sidebar, same #171410 the
-// design handoff uses for this exact panel) — a visual break from every
-// other card on the page, on purpose: this is the one control that
-// overrides everything else. Same tenant_settings.paused field and same
-// toggleGlobalPause action the status bar's quick-stop button uses.
+// Orange panel, black "stop" button — the neobrutalism handoff's own
+// EMERGENCY STOP treatment (Quillrun Neobrutalism.dc.html's Guardrails
+// screen). Previously used bg-sidebar for an "always dark regardless of
+// theme" look, back when --sidebar was #171410 (near-black); that token
+// now carries the sidebar's own peach (#FFE8D6), so this needed its own
+// explicit color rather than borrowing the sidebar's.
 export const EmergencyStopPanel = ({
   organizationId,
   canManage,
@@ -45,43 +46,35 @@ export const EmergencyStopPanel = ({
   ];
 
   return (
-    <div className="rounded-md border border-sidebar-border bg-sidebar p-5">
-      <div className="font-mono text-[10px] text-sidebar-foreground/50 uppercase tracking-widest">
-        Emergency stop
+    <div className="border-[3px] border-foreground bg-primary p-5 shadow-[8px_8px_0_#111]">
+      <div className="font-display text-lg tracking-tight">
+        EMERGENCY STOP
       </div>
-      <p className="mt-3 text-[13px] text-sidebar-foreground/85 leading-relaxed">
+      <p className="mt-3 text-[13px] leading-relaxed">
         Stops every run in flight across all {siteCount} site
         {siteCount === 1 ? "" : "s"}, and blocks publishing until you
         resume. Drafts already written are kept.
       </p>
       <button
-        className={
-          paused
-            ? "mt-4 w-full rounded-md bg-primary py-2.5 font-semibold text-[13.5px] text-primary-foreground disabled:opacity-60"
-            : "mt-4 w-full rounded-md border border-status-error-fg/40 bg-status-error-bg/20 py-2.5 font-semibold text-[13.5px] text-status-error-fg disabled:opacity-60"
-        }
+        className="mt-4 w-full border-[3px] border-foreground bg-foreground py-3 font-display text-[15px] text-background tracking-tight transition-transform hover:-translate-y-0.5 disabled:opacity-60"
         disabled={!canManage || isPending}
         onClick={handleToggle}
         type="button"
       >
         {isPending
-          ? "Working…"
+          ? "WORKING…"
           : paused
-            ? "Resume all agent activity"
-            : "Stop everything now"}
+            ? "RESUME ALL AGENT ACTIVITY"
+            : "STOP EVERYTHING NOW"}
       </button>
       {error && (
-        <p className="mt-2 text-status-error-fg text-xs">{error}</p>
+        <p className="mt-2 font-medium text-sm">{error}</p>
       )}
-      <div className="mt-4 flex flex-col gap-2 border-sidebar-border border-t pt-4">
+      <div className="mt-4 flex flex-col gap-2 border-foreground border-t-2 pt-4">
         {facts.map((f) => (
           <div className="flex items-baseline justify-between gap-3" key={f.k}>
-            <span className="text-[11.5px] text-sidebar-foreground/60">
-              {f.k}
-            </span>
-            <span className="font-mono font-medium text-[11.5px] text-sidebar-foreground">
-              {f.v}
-            </span>
+            <span className="text-[11.5px]">{f.k}</span>
+            <span className="font-bold text-[11.5px]">{f.v}</span>
           </div>
         ))}
       </div>

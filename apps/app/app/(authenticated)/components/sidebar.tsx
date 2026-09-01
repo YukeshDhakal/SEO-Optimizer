@@ -2,7 +2,6 @@
 
 import { UserMenu } from "@repo/auth/components/user-menu";
 import type { Tables } from "@repo/database";
-import { ModeToggle } from "@repo/design-system/components/mode-toggle";
 import {
   Sidebar,
   SidebarContent,
@@ -18,7 +17,13 @@ import {
 } from "@repo/design-system/components/ui/sidebar";
 import { StatusDot } from "@repo/design-system/components/status-pill";
 import { cn } from "@repo/design-system/lib/utils";
-import { FileTextIcon, GlobeIcon, LayoutGridIcon, ShieldIcon } from "lucide-react";
+import {
+  GlobeIcon,
+  LayoutGridIcon,
+  ShieldCheckIcon,
+  ShieldIcon,
+  TagIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
@@ -51,14 +56,15 @@ const siteDotStatus = (site: SidebarSite) => {
   return "await" as const;
 };
 
-// Dark shell (see --sidebar/-foreground/-accent/-border tokens in
-// packages/design-system/styles/globals.css - these already matched the
-// Quillrun Design handoff's palette from the earlier partial reskin,
-// commit 6e5492e; the component itself just never applied them). Four
-// flat nav destinations, no nested submenu, matching the handoff exactly
-// - Billing lives inside Settings instead of its own nav slot, Webhooks
-// (a next-forge Svix demo, unconfigured per PRD.md §5, not part of the
-// designed product) is dropped rather than carried forward unstyled.
+// Peach sidebar shell (--sidebar/-foreground/-accent/-border tokens in
+// packages/design-system/styles/globals.css now carry the neobrutalism
+// handoff's own palette). Nav matches the handoff's Workspace group
+// (Runs/Sites/Topics/Quality gates) plus Guardrails as a second item -
+// the handoff's own top nav bar (which is where its "Guardrails" link
+// lives) doesn't exist in this app's real architecture, so it stays here
+// in the sidebar instead. Audit log and Billing move inside the Guardrails
+// page itself (no nav slot in the handoff for either); Webhooks (a
+// next-forge Svix demo, unconfigured per PRD.md §5) stays dropped.
 export const GlobalSidebar = ({
   children,
   organization,
@@ -74,12 +80,18 @@ export const GlobalSidebar = ({
     .toUpperCase();
 
   const navItems = [
-    { key: "overview", label: "Overview", href: "/", icon: LayoutGridIcon },
+    { key: "runs", label: "Runs", href: "/", icon: LayoutGridIcon },
     { key: "sites", label: "Sites", href: "/sites", icon: GlobeIcon },
-    { key: "audit", label: "Audit log", href: "/settings/audit", icon: FileTextIcon },
+    { key: "topics", label: "Topics", href: "/topics", icon: TagIcon },
+    {
+      key: "quality-gates",
+      label: "Quality gates",
+      href: "/quality-gates",
+      icon: ShieldCheckIcon,
+    },
     {
       key: "settings",
-      label: "Settings",
+      label: "Guardrails",
       href: "/settings",
       icon: ShieldIcon,
       badge: requireApproval ? null : "off",
@@ -93,12 +105,12 @@ export const GlobalSidebar = ({
   return (
     <>
       <Sidebar variant="inset">
-        <SidebarHeader className="gap-0 border-sidebar-border border-b px-3 py-3.5">
-          <div className="flex items-center gap-2.5 rounded-md border border-sidebar-border bg-sidebar-accent/40 px-2.5 py-2">
-            <div className="flex size-6 shrink-0 items-center justify-center rounded-[5px] bg-sidebar-primary font-mono font-semibold text-[10.5px] text-sidebar-primary-foreground">
+        <SidebarHeader className="gap-0 border-sidebar-border border-b-[3px] px-3 py-3.5">
+          <div className="flex items-center gap-2.5 border-[3px] border-sidebar-border bg-card px-2.5 py-2">
+            <div className="flex size-7 shrink-0 items-center justify-center border-2 border-sidebar-border bg-sidebar-primary font-display text-[10.5px] text-sidebar-primary-foreground">
               {initials}
             </div>
-            <span className="truncate font-semibold text-[13px] text-sidebar-foreground">
+            <span className="truncate font-bold text-[13px] text-sidebar-foreground">
               {organization.name}
             </span>
           </div>
@@ -114,9 +126,9 @@ export const GlobalSidebar = ({
                   <SidebarMenuButton
                     asChild
                     className={cn(
-                      "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                      "rounded-none border-2 border-transparent font-bold text-sidebar-foreground/70 hover:border-sidebar-border hover:bg-sidebar-accent hover:text-sidebar-foreground",
                       isActive(item.href) &&
-                        "bg-sidebar-accent text-sidebar-foreground"
+                        "border-sidebar-border bg-sidebar-primary text-sidebar-primary-foreground"
                     )}
                   >
                     <Link href={item.href}>
@@ -125,7 +137,7 @@ export const GlobalSidebar = ({
                     </Link>
                   </SidebarMenuButton>
                   {item.badge && (
-                    <SidebarMenuBadge className="rounded-[4px] bg-status-warning-bg font-mono text-[10px] text-status-warning-fg">
+                    <SidebarMenuBadge className="rounded-none border-2 border-sidebar-border bg-status-warning-bg font-bold text-[10px] text-status-warning-fg">
                       {item.badge}
                     </SidebarMenuBadge>
                   )}
@@ -149,10 +161,10 @@ export const GlobalSidebar = ({
                   <SidebarMenuButton
                     asChild
                     className={cn(
-                      "gap-2.5 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                      "gap-2.5 rounded-none border-2 border-transparent font-semibold text-sidebar-foreground/70 hover:border-sidebar-border hover:bg-sidebar-accent hover:text-sidebar-foreground",
                       onSitePage &&
                         pathname.startsWith(`/sites/${site.id}`) &&
-                        "bg-sidebar-accent text-sidebar-foreground"
+                        "border-sidebar-border bg-sidebar-accent text-sidebar-foreground"
                     )}
                     size="sm"
                   >
@@ -162,7 +174,7 @@ export const GlobalSidebar = ({
                     </Link>
                   </SidebarMenuButton>
                   {site.paused && site.consecutive_publish_failures >= 3 && (
-                    <SidebarMenuBadge className="font-mono text-[10px] text-status-error-fg">
+                    <SidebarMenuBadge className="font-bold text-[10px] text-status-error-fg">
                       ✕
                     </SidebarMenuBadge>
                   )}
@@ -171,12 +183,9 @@ export const GlobalSidebar = ({
             </SidebarMenu>
           </SidebarGroup>
         </SidebarContent>
-        <SidebarFooter className="gap-2 border-sidebar-border border-t px-3 py-3">
-          <div className="flex items-center gap-2">
-            <div className="min-w-0 flex-1 text-sidebar-foreground/70 text-xs [&_button]:text-sidebar-foreground/50 [&_button:hover]:text-sidebar-foreground [&_span]:text-sidebar-foreground/85">
-              <UserMenu />
-            </div>
-            <ModeToggle />
+        <SidebarFooter className="gap-2 border-sidebar-border border-t-[3px] px-3 py-3">
+          <div className="min-w-0 text-sidebar-foreground/70 text-xs [&_button]:text-sidebar-foreground/50 [&_button:hover]:text-sidebar-foreground [&_span]:text-sidebar-foreground/85">
+            <UserMenu />
           </div>
         </SidebarFooter>
       </Sidebar>

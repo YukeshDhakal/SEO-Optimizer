@@ -89,7 +89,7 @@ export const ConnectSearchConsoleForm = ({
             </div>
           )}
           {disconnectState.error && (
-            <p className="text-destructive text-sm">{disconnectState.error}</p>
+            <p className="font-medium text-destructive text-sm">{disconnectState.error}</p>
           )}
           <form action={disconnectAction}>
             <input name="site_connection_id" type="hidden" value={siteConnectionId} />
@@ -117,7 +117,7 @@ export const ConnectSearchConsoleForm = ({
                 them to pick which one is this site.
               </p>
               {fetchState.error && (
-                <p className="text-destructive text-sm">{fetchState.error}</p>
+                <p className="font-medium text-destructive text-sm">{fetchState.error}</p>
               )}
               <Button
                 className="self-start"
@@ -131,7 +131,7 @@ export const ConnectSearchConsoleForm = ({
             <form action={selectAction} className="flex flex-col gap-4">
               <input name="site_connection_id" type="hidden" value={siteConnectionId} />
               <select
-                className="h-9 rounded-md border bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-10 border-[3px] border-foreground bg-input px-3 font-bold text-sm outline-none focus-visible:shadow-[4px_4px_0_#2B44FF]"
                 name="gsc_site_url"
                 onChange={(event) => setSelectedProperty(event.target.value)}
                 value={selectedProperty || properties[0]?.siteUrl}
@@ -143,7 +143,7 @@ export const ConnectSearchConsoleForm = ({
                 ))}
               </select>
               {selectState.error && (
-                <p className="text-destructive text-sm">{selectState.error}</p>
+                <p className="font-medium text-destructive text-sm">{selectState.error}</p>
               )}
               <Button className="self-start" disabled={isSelecting} type="submit">
                 {isSelecting ? "Saving…" : "Use this property"}
@@ -166,12 +166,12 @@ export const ConnectSearchConsoleForm = ({
           selection can ground suggestions in real search query data.
         </p>
         {credentials?.status === "error" && (
-          <p className="text-destructive text-sm">
+          <p className="font-medium text-destructive text-sm">
             The last connection attempt failed — try again.
           </p>
         )}
         {connectState.error && (
-          <p className="text-destructive text-sm">{connectState.error}</p>
+          <p className="font-medium text-destructive text-sm">{connectState.error}</p>
         )}
         <form action={connectAction}>
           <input name="site_connection_id" type="hidden" value={siteConnectionId} />

@@ -67,6 +67,9 @@ const stepPillStatus = (status: string) => {
 const topicOf = (input: unknown): string =>
   (input as { topicHint?: string } | null)?.topicHint ?? "Untitled run";
 
+const contentTypeOf = (input: unknown): "blog" | "faq" =>
+  (input as { contentType?: string } | null)?.contentType === "faq" ? "faq" : "blog";
+
 // Still a read-on-load view, not a live/streaming one — Phase 4 made the
 // underlying run durable (real Workflow DevKit steps, resumable across a
 // crash, cacheable per-step) but this page reads the same
@@ -103,6 +106,39 @@ const RunDetailPage = async ({ params }: RunDetailPageProperties) => {
     .eq("pipeline_run_id", runId)
     .order("started_at", { ascending: true });
 
+  // The `posts` row (content_markdown/meta_title/meta_description) isn't
+  // written until AFTER approval_gate resolves — finalizeRunSucceeded only
+  // runs post-approval (see content-pipeline.ts). So a preview sourced from
+  // `posts` would show nothing for exactly the case that matters most: a
+  // reviewer deciding whether to approve. `pipeline_run_steps.output` is
+  // populated the moment each step finishes (recordStepComplete stores the
+  // step's full return value), so the draft/geo_seo_optimize steps' output
+  // is available the instant the run reaches approval_gate. A run can have
+  // multiple draft/geo_seo_optimize rows (each validation-feedback retry
+  // adds another pair) — take the last succeeded one of each, matching what
+  // actually got approved. Rendered as plain text (never
+  // dangerouslySetInnerHTML), so there's no XSS surface from model output.
+  const lastSucceededOutput = (stepName: string): unknown =>
+    steps
+      ?.filter((s) => s.step_name === stepName && s.status === "succeeded")
+      .at(-1)?.output;
+
+  const draftMarkdown = lastSucceededOutput("draft");
+  const geoSeoOutput = lastSucceededOutput("geo_seo_optimize") as
+    | { metaTitle?: unknown; metaDescription?: unknown }
+    | null
+    | undefined;
+
+  const preview = {
+    metaTitle:
+      typeof geoSeoOutput?.metaTitle === "string" ? geoSeoOutput.metaTitle : null,
+    metaDescription:
+      typeof geoSeoOutput?.metaDescription === "string"
+        ? geoSeoOutput.metaDescription
+        : null,
+    draftMarkdown: typeof draftMarkdown === "string" ? draftMarkdown : null,
+  };
+
   const isAwaitingApproval =
     run.status === "running" && run.current_step === "approval_gate";
   const canManage =
@@ -113,12 +149,15 @@ const RunDetailPage = async ({ params }: RunDetailPageProperties) => {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="font-semibold text-xl tracking-tight">
+            <h1 className="font-display text-2xl tracking-tight">
               {topicOf(run.input)}
             </h1>
             <StatusPill status={runPillStatus(run)}>
               {runLabel(run)}
             </StatusPill>
+            <span className="border-2 border-foreground bg-secondary px-2 py-0.5 font-bold text-[11px] text-secondary-foreground uppercase tracking-wide">
+              {contentTypeOf(run.input) === "faq" ? "FAQ" : "Blog"}
+            </span>
           </div>
           <div className="mt-1.5 flex flex-wrap items-center gap-3 font-mono text-muted-foreground text-xs">
             <span>{run.trigger_type}</span>
@@ -146,12 +185,12 @@ const RunDetailPage = async ({ params }: RunDetailPageProperties) => {
       <SiteTabs siteId={id} />
 
       {isAwaitingApproval && canManage && (
-        <div className="flex flex-wrap items-start gap-3 rounded-md border border-status-warning-fg/30 bg-status-warning-bg px-4 py-3.5">
+        <div className="flex flex-wrap items-start gap-3 border-[3px] border-foreground bg-status-warning-bg px-4 py-3.5 shadow-[6px_6px_0_#111]">
           <span className="mt-0.5 font-mono text-status-warning-fg text-xs">
             ◎
           </span>
           <div className="min-w-[240px] flex-1">
-            <p className="font-semibold text-status-warning-fg text-sm">
+            <p className="font-bold text-status-warning-fg text-sm">
               Paused, waiting for your approval
             </p>
             <p className="mt-0.5 text-status-warning-fg/85 text-xs">
@@ -165,17 +204,53 @@ const RunDetailPage = async ({ params }: RunDetailPageProperties) => {
       )}
 
       {run.error && (
-        <div className="rounded-md border border-status-error-fg/25 bg-status-error-bg px-4 py-3 text-status-error-fg text-sm">
+        <div className="border-[3px] border-foreground bg-status-error-bg px-4 py-3 font-medium text-status-error-fg text-sm">
           {run.error}
         </div>
       )}
 
-      <div className="overflow-hidden rounded-md border bg-card">
-        <div className="border-b px-4 py-3 font-semibold text-sm">
+      {(preview.metaTitle || preview.metaDescription || preview.draftMarkdown) && (
+        <div className="overflow-hidden border-[3px] border-foreground bg-card shadow-[6px_6px_0_#111]">
+          <div className="border-foreground border-b-[3px] px-4 py-3 font-display text-base tracking-tight">
+            Generated content
+          </div>
+          <div className="flex flex-col gap-3 px-4 py-3.5">
+            {preview.metaTitle && (
+              <div>
+                <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+                  Meta title
+                </p>
+                <p className="text-sm">{preview.metaTitle}</p>
+              </div>
+            )}
+            {preview.metaDescription && (
+              <div>
+                <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+                  Meta description
+                </p>
+                <p className="text-sm">{preview.metaDescription}</p>
+              </div>
+            )}
+            {preview.draftMarkdown && (
+              <div>
+                <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+                  Draft
+                </p>
+                <pre className="mt-1 max-h-96 overflow-y-auto whitespace-pre-wrap font-sans text-sm leading-relaxed">
+                  {preview.draftMarkdown}
+                </pre>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="overflow-hidden border-[3px] border-foreground bg-card shadow-[6px_6px_0_#111]">
+        <div className="border-foreground border-b-[3px] px-4 py-3 font-display text-base tracking-tight">
           Stage timeline
         </div>
         {steps && steps.length > 0 ? (
-          <div className="flex flex-col divide-y">
+          <div className="flex flex-col divide-y-2 divide-foreground">
             {steps.map((step) => (
               <div
                 className="flex items-start justify-between gap-4 px-4 py-3.5"

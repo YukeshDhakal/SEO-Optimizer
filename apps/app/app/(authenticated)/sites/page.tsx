@@ -56,7 +56,7 @@ const SitesPage = async () => {
     <div className="flex flex-1 flex-col gap-5 p-6">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="font-semibold text-2xl tracking-tight">Sites</h1>
+          <h1 className="font-display text-3xl tracking-tight">SITES</h1>
           <p className="mt-1 text-muted-foreground text-sm">{summary}</p>
         </div>
       </div>
@@ -64,39 +64,38 @@ const SitesPage = async () => {
       {canManage && <NewSiteForm />}
 
       {sites && sites.length > 0 ? (
-        <div className="overflow-hidden rounded-md border">
+        <div className="overflow-x-auto border-[3px] border-foreground">
           <table className="w-full text-sm">
-            <thead className="border-b bg-muted/40 text-left font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+            <thead className="border-foreground border-b-[3px] bg-muted text-left font-bold text-[11px] uppercase tracking-wider">
               <tr>
-                <th className="px-4 py-2.5 font-medium">Site</th>
-                <th className="px-4 py-2.5 font-medium">CMS</th>
-                <th className="px-4 py-2.5 font-medium">State</th>
-                <th className="px-4 py-2.5 font-medium">Failures</th>
-                {canManage && (
-                  <th className="px-4 py-2.5 text-right font-medium">
-                    Actions
-                  </th>
-                )}
+                <th className="px-4 py-3">Site</th>
+                <th className="px-4 py-3">CMS</th>
+                <th className="px-4 py-3">State</th>
+                <th className="px-4 py-3">Failures</th>
+                {canManage && <th className="px-4 py-3 text-right">Actions</th>}
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody>
               {sites.map((site) => (
-                <tr className="hover:bg-muted/30" key={site.id}>
-                  <td className="px-4 py-3">
+                <tr
+                  className="border-foreground border-b-2 transition-colors last:border-b-0 hover:bg-accent/30"
+                  key={site.id}
+                >
+                  <td className="px-4 py-3.5">
                     <Link
-                      className="font-medium hover:underline"
+                      className="font-bold hover:text-primary"
                       href={`/sites/${site.id}`}
                     >
                       {site.display_name}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">
+                  <td className="px-4 py-3.5 font-medium text-muted-foreground">
                     {site.cms_type}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3.5">
                     <StatusPill status={sitePillStatus(site)} />
                   </td>
-                  <td className="px-4 py-3 font-mono text-muted-foreground text-xs">
+                  <td className="px-4 py-3.5 font-mono text-muted-foreground text-xs">
                     {site.consecutive_publish_failures > 0 ? (
                       <span className="text-status-error-fg">
                         {site.consecutive_publish_failures}
@@ -106,7 +105,7 @@ const SitesPage = async () => {
                     )}
                   </td>
                   {canManage && (
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3.5 text-right">
                       <PauseToggleButton
                         id={site.id}
                         organizationId={organization.id}
@@ -120,8 +119,10 @@ const SitesPage = async () => {
           </table>
         </div>
       ) : (
-        <div className="rounded-md border border-dashed p-9 text-center">
-          <p className="font-semibold text-base">No sites connected yet</p>
+        <div className="border-[3px] border-foreground border-dashed p-9 text-center">
+          <p className="font-display text-lg tracking-tight">
+            NO SITES CONNECTED YET
+          </p>
           <p className="mx-auto mt-1.5 max-w-md text-muted-foreground text-sm">
             Connect a WordPress site, or start a hosted blog we run for you.
             The agent stays idle until a site exists.

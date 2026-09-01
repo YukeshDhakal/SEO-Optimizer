@@ -55,7 +55,7 @@ const PostsPage = async ({ params }: PostsPageProperties) => {
     <div className="flex flex-1 flex-col gap-5 p-6">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="font-semibold text-2xl tracking-tight">Posts</h1>
+          <h1 className="font-display text-3xl tracking-tight">POSTS</h1>
           <p className="mt-1 max-w-xl text-muted-foreground text-sm">
             Published posts live on your server, not ours. The live link is
             the proof, so open it whenever you want to check the agent's
@@ -70,36 +70,39 @@ const PostsPage = async ({ params }: PostsPageProperties) => {
       <SiteTabs siteId={id} />
 
       {posts && posts.length > 0 ? (
-        <div className="overflow-hidden rounded-md border">
+        <div className="overflow-x-auto border-[3px] border-foreground">
           <table className="w-full text-sm">
-            <thead className="border-b bg-muted/40 text-left font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+            <thead className="border-foreground border-b-[3px] bg-muted text-left font-bold text-[11px] uppercase tracking-wider">
               <tr>
-                <th className="px-4 py-2.5 font-medium">Title</th>
-                <th className="px-4 py-2.5 font-medium">Status</th>
-                <th className="px-4 py-2.5 font-medium">Published</th>
-                <th className="px-4 py-2.5 font-medium">Live URL</th>
+                <th className="px-4 py-3">Title</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Published</th>
+                <th className="px-4 py-3">Live URL</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody>
               {posts.map((post) => (
-                <tr className="hover:bg-muted/30" key={post.id}>
-                  <td className="max-w-sm truncate px-4 py-3 font-medium">
+                <tr
+                  className="border-foreground border-b-2 transition-colors last:border-b-0 hover:bg-accent/30"
+                  key={post.id}
+                >
+                  <td className="max-w-sm truncate px-4 py-3.5 font-bold">
                     {post.title}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3.5">
                     <StatusPill status={postPillStatus(post.status)}>
                       {post.status}
                     </StatusPill>
                   </td>
-                  <td className="px-4 py-3 font-mono text-muted-foreground text-xs">
+                  <td className="px-4 py-3.5 font-mono text-muted-foreground text-xs">
                     {post.published_at
                       ? new Date(post.published_at).toLocaleString()
                       : "—"}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3.5">
                     {post.published_url ? (
                       <a
-                        className="inline-flex items-center gap-1.5 rounded-md border border-primary/25 bg-primary/5 px-2.5 py-1 font-medium font-mono text-primary text-xs hover:bg-primary/10"
+                        className="inline-flex items-center gap-1.5 border-2 border-foreground bg-accent px-2.5 py-1 font-bold font-mono text-xs hover:bg-primary"
                         href={post.published_url}
                         rel="noreferrer"
                         target="_blank"

@@ -1,24 +1,24 @@
 import { createClient } from "@repo/auth/server";
-import { StatusPill } from "@repo/design-system/components/status-pill";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentOrganization } from "../lib/organization";
+import { type RunRow, RunsTable, contentTypeOf, topicOf } from "./components/runs-table";
 
 export const metadata: Metadata = {
-  title: "Overview",
+  title: "Runs",
   description: "Everything the agent did across every connected site.",
 };
 
 const startOfWindow = (days: number) =>
   new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
-// The cross-site overview the design handoff put at the root route -
-// ROUTING_SPEC.md flagged `/` as "still the starter dashboard", the
-// most-visited destination in the product rendering a placeholder. Real
-// data throughout: no mock stats, no sparklines that would need history
-// this schema doesn't track yet - every number here is a live count.
-const OverviewPage = async () => {
+// The Workspace nav's "Runs" landing (root route) — a global, cross-site
+// table, matching the neobrutalism handoff's Runs screen. Folds in the
+// stat cards and "Waiting on you"/"Needs attention" triage panels from the
+// previous Overview page rather than dropping them (per-site sites table
+// dropped here since /sites, its own nav item now, already covers that).
+const RunsLandingPage = async () => {
   const organization = await getCurrentOrganization();
   if (!organization) {
     redirect("/onboarding");
@@ -29,7 +29,7 @@ const OverviewPage = async () => {
     { count: publishedCount },
     { count: blockedCount },
     { count: failedCount },
-    { data: sites },
+    { data: allRuns },
     { data: awaitingRuns },
     { data: pausedSites },
     { data: blockedRuns },
@@ -53,10 +53,11 @@ const OverviewPage = async () => {
       .eq("status", "failed")
       .gte("started_at", startOfWindow(7)),
     supabase
-      .from("site_connections")
-      .select("id, display_name, cms_type, status, paused, consecutive_publish_failures")
+      .from("pipeline_runs")
+      .select("id, input, status, current_step, trigger_type, started_at, site_connections(id, display_name)")
       .eq("organization_id", organization.id)
-      .order("display_name", { ascending: true }),
+      .order("started_at", { ascending: false })
+      .limit(50),
     supabase
       .from("pipeline_runs")
       .select("id, input, started_at, site_connections(id, display_name)")
@@ -80,9 +81,6 @@ const OverviewPage = async () => {
       .limit(3),
   ]);
 
-  const topicOf = (input: unknown): string =>
-    (input as { topicHint?: string } | null)?.topicHint ?? "Untitled run";
-
   const pausedCount = pausedSites?.length ?? 0;
 
   const stats = [
@@ -92,6 +90,18 @@ const OverviewPage = async () => {
     { label: "Failed runs, 7d", value: failedCount ?? 0 },
     { label: "Sites auto paused", value: pausedCount },
   ];
+
+  const rows: RunRow[] = (allRuns ?? []).map((run) => ({
+    id: run.id,
+    siteId: run.site_connections?.id ?? "",
+    siteName: run.site_connections?.display_name ?? "Unknown site",
+    topic: topicOf(run.input),
+    status: run.status,
+    currentStep: run.current_step,
+    triggerType: run.trigger_type,
+    startedAt: run.started_at,
+    contentType: contentTypeOf(run.input),
+  }));
 
   const attention = [
     ...(pausedSites ?? []).map((s) => ({
@@ -111,99 +121,45 @@ const OverviewPage = async () => {
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
       <div>
-        <h1 className="font-semibold text-2xl tracking-tight">
-          Across all sites
-        </h1>
+        <h1 className="font-display text-3xl tracking-tight">RUNS</h1>
         <p className="mt-1 max-w-2xl text-muted-foreground text-sm">
-          Everything the agent did in the last seven days, grouped by client
-          site. Anything red or amber wants a person.
+          Every pipeline run across every connected site. Anything red or
+          amber wants a person.
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-5">
         {stats.map((s) => (
-          <div className="rounded-md border bg-card p-3.5" key={s.label}>
-            <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+          <div
+            className="border-[3px] border-foreground bg-card p-3.5 shadow-[5px_5px_0_#111] transition-transform hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[9px_9px_0_#111]"
+            key={s.label}
+          >
+            <div className="font-bold text-[10px] text-muted-foreground uppercase tracking-wider">
               {s.label}
             </div>
-            <div className="mt-2 font-semibold text-2xl tracking-tight">
+            <div className="font-display mt-2 text-3xl tracking-tight">
               {s.value}
             </div>
           </div>
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-md border">
-        <table className="w-full text-sm">
-          <thead className="border-b bg-muted/40 text-left font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
-            <tr>
-              <th className="px-4 py-2.5 font-medium">Client site</th>
-              <th className="px-4 py-2.5 font-medium">CMS</th>
-              <th className="px-4 py-2.5 font-medium">State</th>
-              <th className="px-4 py-2.5 font-medium">Failures</th>
-              <th className="px-4 py-2.5" />
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {(sites ?? []).map((site) => (
-              <tr className="hover:bg-muted/30" key={site.id}>
-                <td className="px-4 py-3 font-medium">
-                  <Link className="hover:underline" href={`/sites/${site.id}`}>
-                    {site.display_name}
-                  </Link>
-                </td>
-                <td className="px-4 py-3 text-muted-foreground">
-                  {site.cms_type}
-                </td>
-                <td className="px-4 py-3">
-                  <StatusPill
-                    status={
-                      site.paused
-                        ? "paused"
-                        : site.status === "error"
-                          ? "failed"
-                          : site.status === "connected"
-                            ? "ok"
-                            : "await"
-                    }
-                  />
-                </td>
-                <td className="px-4 py-3 font-mono text-muted-foreground text-xs">
-                  {site.consecutive_publish_failures}
-                </td>
-                <td className="px-4 py-3 text-right">
-                  <Link
-                    className="font-medium text-primary text-xs hover:underline"
-                    href={`/sites/${site.id}`}
-                  >
-                    Open
-                  </Link>
-                </td>
-              </tr>
-            ))}
-            {(sites ?? []).length === 0 && (
-              <tr>
-                <td className="px-4 py-6 text-center text-muted-foreground text-sm" colSpan={5}>
-                  No sites connected yet.{" "}
-                  <Link className="text-primary hover:underline" href="/sites">
-                    Connect one
-                  </Link>
-                  .
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <RunsTable
+        emptyMessage="No runs yet. Connect a site and generate your first post."
+        rows={rows}
+        showSiteColumn={true}
+      />
 
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        <div className="rounded-md border bg-card p-4">
-          <h2 className="font-semibold text-sm">Waiting on you</h2>
-          <div className="mt-3 flex flex-col divide-y">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="border-[3px] border-foreground bg-card p-4">
+          <h2 className="font-display text-lg tracking-tight">
+            WAITING ON YOU
+          </h2>
+          <div className="mt-3 flex flex-col divide-y-2 divide-foreground/15">
             {(awaitingRuns ?? []).map((run) => (
-              <div className="flex items-center gap-3 py-2.5" key={run.id}>
+              <div className="flex items-center gap-3 py-3" key={run.id}>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-sm">
+                  <p className="truncate font-bold text-sm">
                     {topicOf(run.input)}
                   </p>
                   <p className="font-mono text-[11px] text-muted-foreground">
@@ -212,7 +168,7 @@ const OverviewPage = async () => {
                   </p>
                 </div>
                 <Link
-                  className="shrink-0 rounded-md border px-2.5 py-1 font-medium text-xs hover:bg-muted"
+                  className="shrink-0 border-2 border-foreground px-2.5 py-1 font-bold text-xs hover:bg-accent"
                   href={`/sites/${run.site_connections?.id}/runs/${run.id}`}
                 >
                   Review
@@ -220,18 +176,20 @@ const OverviewPage = async () => {
               </div>
             ))}
             {(awaitingRuns ?? []).length === 0 && (
-              <p className="py-2.5 text-muted-foreground text-sm">
+              <p className="py-3 text-muted-foreground text-sm">
                 Nothing waiting for review.
               </p>
             )}
           </div>
         </div>
-        <div className="rounded-md border bg-card p-4">
-          <h2 className="font-semibold text-sm">Needs attention</h2>
-          <div className="mt-3 flex flex-col divide-y">
+        <div className="border-[3px] border-foreground bg-card p-4">
+          <h2 className="font-display text-lg tracking-tight">
+            NEEDS ATTENTION
+          </h2>
+          <div className="mt-3 flex flex-col divide-y-2 divide-foreground/15">
             {attention.map((a) => (
               <Link
-                className="flex items-start gap-2.5 py-2.5"
+                className="flex items-start gap-2.5 py-3 hover:text-primary"
                 href={a.href}
                 key={a.key}
               >
@@ -239,13 +197,13 @@ const OverviewPage = async () => {
                   ✕
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-sm">{a.title}</p>
+                  <p className="font-bold text-sm">{a.title}</p>
                   <p className="text-muted-foreground text-xs">{a.detail}</p>
                 </div>
               </Link>
             ))}
             {attention.length === 0 && (
-              <p className="py-2.5 text-muted-foreground text-sm">
+              <p className="py-3 text-muted-foreground text-sm">
                 Nothing needs attention right now.
               </p>
             )}
@@ -256,4 +214,4 @@ const OverviewPage = async () => {
   );
 };
 
-export default OverviewPage;
+export default RunsLandingPage;

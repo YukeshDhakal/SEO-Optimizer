@@ -91,21 +91,21 @@ const AuditLogPage = async ({ searchParams }: AuditLogPageProps) => {
   return (
     <div className="flex flex-1 flex-col gap-5 p-6">
       <div>
-        <h1 className="font-semibold text-2xl tracking-tight">Audit log</h1>
+        <h1 className="font-display text-3xl tracking-tight">AUDIT LOG</h1>
         <p className="mt-1 text-muted-foreground text-sm">
           Everything the agent did while you were not watching, newest
           first. Nothing here can be edited or deleted.
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-1.5">
+      <div className="flex flex-wrap items-center gap-2">
         {FILTERS.map((f) => (
           <Link
             className={cn(
-              "rounded-full border px-3 py-1 font-medium text-xs",
+              "border-2 border-foreground px-3 py-1 font-bold text-xs",
               activeFilter === f.key
-                ? "border-foreground bg-foreground text-background"
-                : "text-muted-foreground hover:bg-muted"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-accent"
             )}
             href={f.key === "all" ? "/settings/audit" : `/settings/audit?filter=${f.key}`}
             key={f.key}
@@ -116,8 +116,8 @@ const AuditLogPage = async ({ searchParams }: AuditLogPageProps) => {
       </div>
 
       {filtered.length > 0 ? (
-        <div className="overflow-hidden rounded-md border">
-          <div className="flex flex-col divide-y">
+        <div className="overflow-hidden border-[3px] border-foreground">
+          <div className="flex flex-col divide-y-2 divide-foreground">
             {filtered.map((entry) => {
               const { glyph, fg } = statusGlyph(pillFor(entry.action));
               return (

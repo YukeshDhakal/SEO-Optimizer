@@ -56,9 +56,7 @@ const SettingsPage = async () => {
     <div className="flex flex-1 flex-col gap-5 p-6">
       <div className="flex items-end justify-between gap-4">
         <div>
-          <h1 className="font-semibold text-2xl tracking-tight">
-            Safety and limits
-          </h1>
+          <h1 className="font-display text-3xl tracking-tight">GUARDRAILS</h1>
           <p className="mt-1 max-w-xl text-muted-foreground text-sm">
             Organization-wide controls for {organization.name}. These
             override every site schedule and every run in flight.
@@ -78,20 +76,20 @@ const SettingsPage = async () => {
         <div className="flex flex-col gap-4">
           <form
             action={updateTenantSettings}
-            className="overflow-hidden rounded-md border bg-card"
+            className="overflow-hidden border-[3px] border-foreground bg-card"
           >
             <input name="organization_id" type="hidden" value={organization.id} />
-            <div className="flex items-start gap-4 border-b px-5 py-4">
+            <div className="flex items-start gap-4 border-foreground border-b-[3px] px-5 py-4">
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-semibold text-sm">
+                  <span className="font-bold text-sm">
                     Require approval before publishing
                   </span>
                   <span
                     className={
                       settings?.require_approval
-                        ? "rounded-[4px] bg-status-success-bg px-1.5 py-0.5 font-mono text-[10px] text-status-success-fg"
-                        : "rounded-[4px] bg-status-error-bg px-1.5 py-0.5 font-mono text-[10px] text-status-error-fg"
+                        ? "border-2 border-foreground bg-accent px-1.5 py-0.5 font-bold text-[10px]"
+                        : "border-2 border-foreground bg-status-error-bg px-1.5 py-0.5 font-bold text-[10px] text-status-error-fg"
                     }
                   >
                     {settings?.require_approval ? "recommended" : "off"}
@@ -104,16 +102,16 @@ const SettingsPage = async () => {
                 </p>
               </div>
               <input
-                className="mt-1 size-4 accent-primary"
+                className="mt-1 size-5 accent-primary"
                 defaultChecked={settings?.require_approval ?? false}
                 disabled={!canManage}
                 name="require_approval"
                 type="checkbox"
               />
             </div>
-            <div className="flex items-start gap-4 px-5 py-4">
+            <div className="flex items-start gap-4 border-foreground border-b-[3px] px-5 py-4">
               <div className="flex-1">
-                <span className="font-semibold text-sm">
+                <span className="font-bold text-sm">
                   Auto pause a site after 3 failures
                 </span>
                 <p className="mt-1 max-w-md text-muted-foreground text-xs">
@@ -122,11 +120,11 @@ const SettingsPage = async () => {
                   cannot be turned off.
                 </p>
               </div>
-              <input checked disabled className="mt-1 size-4" readOnly type="checkbox" />
+              <input checked disabled className="mt-1 size-5" readOnly type="checkbox" />
             </div>
 
-            <div className="border-t bg-muted/30 px-5 py-4">
-              <p className="mb-3 font-semibold text-sm">Posting limits</p>
+            <div className="bg-muted px-5 py-4">
+              <p className="mb-3 font-bold text-sm">Posting limits</p>
               <p className="mb-3 max-w-md text-muted-foreground text-xs">
                 Hard ceilings across the whole organization. When a limit is
                 hit, runs are skipped for that day and the dispatcher moves
@@ -134,7 +132,7 @@ const SettingsPage = async () => {
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <Label className="font-mono text-[10.5px] text-muted-foreground uppercase tracking-wider" htmlFor="max_posts_per_day">
+                  <Label className="font-bold text-[10.5px] text-muted-foreground uppercase tracking-wider" htmlFor="max_posts_per_day">
                     Max posts / day
                   </Label>
                   <Input
@@ -146,7 +144,7 @@ const SettingsPage = async () => {
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <Label className="font-mono text-[10.5px] text-muted-foreground uppercase tracking-wider" htmlFor="max_posts_per_week">
+                  <Label className="font-bold text-[10.5px] text-muted-foreground uppercase tracking-wider" htmlFor="max_posts_per_week">
                     Max posts / week
                   </Label>
                   <Input

@@ -88,7 +88,7 @@ export const ConnectShopifyForm = ({
               </p>
             </div>
             {fetchState.error && (
-              <p className="text-destructive text-sm">{fetchState.error}</p>
+              <p className="font-medium text-destructive text-sm">{fetchState.error}</p>
             )}
             <Button className="self-start" disabled={isFetching} type="submit">
               {isFetching ? "Looking up blogs…" : "Find blogs"}
@@ -111,7 +111,7 @@ export const ConnectShopifyForm = ({
             <div className="flex flex-col gap-2">
               <Label htmlFor="blog">Blog</Label>
               <select
-                className="h-9 rounded-md border bg-transparent px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="h-10 border-[3px] border-foreground bg-input px-3 font-bold text-sm outline-none focus-visible:shadow-[4px_4px_0_#2B44FF]"
                 id="blog"
                 onChange={(event) => {
                   const blog = blogs.find(
@@ -131,10 +131,10 @@ export const ConnectShopifyForm = ({
               </select>
             </div>
             {connectState.error && (
-              <p className="text-destructive text-sm">{connectState.error}</p>
+              <p className="font-medium text-destructive text-sm">{connectState.error}</p>
             )}
             {connectState.success && (
-              <p className="text-sm text-emerald-600 dark:text-emerald-400">
+              <p className="font-bold text-sm text-status-success-fg">
                 Connected.
               </p>
             )}
