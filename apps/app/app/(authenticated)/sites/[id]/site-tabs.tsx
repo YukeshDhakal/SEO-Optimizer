@@ -13,7 +13,7 @@ const TABS = [
   { key: "generate", label: "Generate" },
   { key: "runs", label: "Runs" },
   { key: "posts", label: "Posts" },
-  { key: "posts/new", label: "Publish now" },
+  { key: "posts/publish", label: "Publish now" },
   { key: "schedule", label: "Schedule" },
 ];
 
@@ -30,8 +30,8 @@ export const SiteTabs = ({ siteId }: SiteTabsProps) => {
     if (rest.startsWith("runs")) {
       return "runs";
     }
-    if (rest.startsWith("posts/new")) {
-      return "posts/new";
+    if (rest.startsWith("posts/publish")) {
+      return "posts/publish";
     }
     if (rest.startsWith("posts")) {
       return "posts";

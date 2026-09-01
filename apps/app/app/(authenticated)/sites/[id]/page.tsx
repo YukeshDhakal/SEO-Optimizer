@@ -4,6 +4,7 @@ import { Button } from "@repo/design-system/components/ui/button";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { Suspense } from "react";
 import { getCurrentOrganization } from "../../../lib/organization";
 import { PauseToggleButton } from "../pause-toggle-button";
 import { ConnectGoogleAdsForm } from "./connect-google-ads-form";
@@ -13,6 +14,7 @@ import { ConnectWebflowForm } from "./connect-webflow-form";
 import { ConnectWordPressForm } from "./connect-wordpress-form";
 import { DeleteSiteButton } from "./delete-site-button";
 import { EditSiteForm } from "./edit-site-form";
+import { OAuthStatusBanner } from "./oauth-status-banner";
 import { SiteTabs } from "./site-tabs";
 
 export const metadata: Metadata = {
@@ -197,7 +199,7 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
                   <Link href={`/sites/${site.id}/generate`}>Generate</Link>
                 </Button>
                 <Button asChild size="sm" variant="outline">
-                  <Link href={`/sites/${site.id}/posts/new`}>New post</Link>
+                  <Link href={`/sites/${site.id}/posts/publish`}>New post</Link>
                 </Button>
               </>
             )}
@@ -229,6 +231,10 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
       )}
 
       <SiteTabs siteId={site.id} />
+
+      <Suspense fallback={null}>
+        <OAuthStatusBanner />
+      </Suspense>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {siteStats.map((s) => (

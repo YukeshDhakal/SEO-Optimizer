@@ -7,6 +7,21 @@ import { env } from "@/env";
 
 let nextConfig: NextConfig = withToolbar(withLogging(config));
 
+// /settings -> /guardrails and posts/new -> posts/publish: the nav label
+// and page H1 always said "Guardrails"/"Publish now" - only the URL still
+// said otherwise. Renamed to match (2026-09-02); these 301s keep any
+// existing bookmark, saved link, or outbound email working.
+nextConfig.redirects = async () => [
+  { source: "/settings", destination: "/guardrails", permanent: true },
+  { source: "/settings/audit", destination: "/guardrails/audit", permanent: true },
+  { source: "/settings/billing", destination: "/guardrails/billing", permanent: true },
+  {
+    source: "/sites/:id/posts/new",
+    destination: "/sites/:id/posts/publish",
+    permanent: true,
+  },
+];
+
 if (env.VERCEL) {
   nextConfig = withSentry(nextConfig);
 }

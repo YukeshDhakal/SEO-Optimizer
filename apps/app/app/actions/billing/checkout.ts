@@ -83,8 +83,8 @@ export const createCheckoutSession = async (
     customer: customerId,
     mode: "subscription",
     line_items: [{ price: plan.stripe_price_id, quantity: 1 }],
-    success_url: `${env.NEXT_PUBLIC_APP_URL}/settings/billing?checkout=success`,
-    cancel_url: `${env.NEXT_PUBLIC_APP_URL}/settings/billing?checkout=canceled`,
+    success_url: `${env.NEXT_PUBLIC_APP_URL}/guardrails/billing?checkout=success`,
+    cancel_url: `${env.NEXT_PUBLIC_APP_URL}/guardrails/billing?checkout=canceled`,
   });
 
   if (!session.url) {
@@ -118,7 +118,7 @@ export const createPortalSession = async (
 
   const session = await stripe.billingPortal.sessions.create({
     customer: organization.stripe_customer_id,
-    return_url: `${env.NEXT_PUBLIC_APP_URL}/settings/billing`,
+    return_url: `${env.NEXT_PUBLIC_APP_URL}/guardrails/billing`,
   });
 
   redirect(session.url);

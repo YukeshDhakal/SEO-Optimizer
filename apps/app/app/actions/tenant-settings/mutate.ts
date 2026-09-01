@@ -29,5 +29,5 @@ export const updateTenantSettings = async (formData: FormData): Promise<void> =>
     })
     .eq("organization_id", organizationId);
 
-  revalidatePath("/settings");
+  revalidatePath("/guardrails");
 };

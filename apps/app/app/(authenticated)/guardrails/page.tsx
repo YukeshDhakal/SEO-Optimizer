@@ -64,10 +64,10 @@ const SettingsPage = async () => {
         </div>
         <div className="flex shrink-0 gap-2">
           <Button asChild size="sm" variant="outline">
-            <Link href="/settings/billing">Billing</Link>
+            <Link href="/guardrails/billing">Billing</Link>
           </Button>
           <Button asChild size="sm" variant="outline">
-            <Link href="/settings/audit">Audit log</Link>
+            <Link href="/guardrails/audit">Audit log</Link>
           </Button>
         </div>
       </div>

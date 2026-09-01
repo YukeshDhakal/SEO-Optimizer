@@ -107,7 +107,7 @@ const AuditLogPage = async ({ searchParams }: AuditLogPageProps) => {
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-accent"
             )}
-            href={f.key === "all" ? "/settings/audit" : `/settings/audit?filter=${f.key}`}
+            href={f.key === "all" ? "/guardrails/audit" : `/guardrails/audit?filter=${f.key}`}
             key={f.key}
           >
             {f.label}

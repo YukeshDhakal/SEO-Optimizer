@@ -92,7 +92,7 @@ export const GlobalSidebar = ({
     {
       key: "settings",
       label: "Guardrails",
-      href: "/settings",
+      href: "/guardrails",
       icon: ShieldIcon,
       badge: requireApproval ? null : "off",
     },

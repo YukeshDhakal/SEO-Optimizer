@@ -63,7 +63,7 @@ const PostsPage = async ({ params }: PostsPageProperties) => {
           </p>
         </div>
         <Button asChild size="sm">
-          <Link href={`/sites/${id}/posts/new`}>New post</Link>
+          <Link href={`/sites/${id}/posts/publish`}>New post</Link>
         </Button>
       </div>
 
