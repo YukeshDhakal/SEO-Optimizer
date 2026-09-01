@@ -30,7 +30,7 @@ describe("listAccessibleCustomers", () => {
 
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe(
-      "https://googleads.googleapis.com/v17/customers:listAccessibleCustomers"
+      "https://googleads.googleapis.com/v25/customers:listAccessibleCustomers"
     );
     expect(init.headers.Authorization).toBe("Bearer access-1");
     expect(init.headers["developer-token"]).toBe("dev-token-1");
@@ -126,7 +126,7 @@ describe("generateKeywordHistoricalMetrics", () => {
 
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe(
-      "https://googleads.googleapis.com/v17/customers/1234567890:generateKeywordHistoricalMetrics"
+      "https://googleads.googleapis.com/v25/customers/1234567890:generateKeywordHistoricalMetrics"
     );
     const body = JSON.parse(init.body as string);
     expect(body.keywords).toEqual(["best coffee grinder"]);

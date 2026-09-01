@@ -7,7 +7,14 @@ import type {
 // Raw REST, not the unofficial gRPC `google-ads-api` npm package — same
 // dependency-light choice packages/search-console makes for the GSC API,
 // and every Ads API service is fully available over REST too.
-const API_BASE = "https://googleads.googleapis.com/v17";
+//
+// v17 sunset 2025-06-04 (Google gives ~1 year's notice per version) — a
+// sunset version 404s with no parseable JSON error body, which is exactly
+// what production's stored google_ads_credentials.error_message showed
+// ("Google Ads API error (HTTP 404)." with no detail). v25 is current as
+// of 2026-09; listAccessibleCustomers and generateKeywordHistoricalMetrics
+// are both long-stable resource paths, unchanged across this jump.
+const API_BASE = "https://googleads.googleapis.com/v25";
 
 const adsFetch = async <T>(
   accessToken: string,
@@ -29,7 +36,7 @@ const adsFetch = async <T>(
   });
 
   if (!response.ok) {
-    // Google Ads API v17 REST errors are JSON: { error: { code, message,
+    // Google Ads API REST errors are JSON: { error: { code, message,
     // status, details: [...] } } — surfacing `message` here is what makes
     // "no accessible accounts" distinguishable from "the developer-token
     // header was empty/invalid" (401 UNAUTHENTICATED) or "this developer
