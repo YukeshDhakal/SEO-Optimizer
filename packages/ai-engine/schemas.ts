@@ -31,6 +31,19 @@ export interface ResearchResult {
   candidateFaqs: string[];
 }
 
+// The customer's own site identity (packages/workflows/db-steps.ts's
+// getSiteIdentity reads this from site_connections.base_url/display_name —
+// ai-engine itself stays DB-agnostic, same pattern as gscQueries in
+// topic-selection.ts). Optional everywhere it's threaded through: a site
+// that hasn't finished connecting has `baseUrl: null` (site_connections.
+// base_url is nullable), and every caller that omits `site` entirely
+// (existing tests, the legacy plain-function pipeline before this field
+// existed) just skips the site-reference requirement rather than failing.
+export interface SiteIdentity {
+  baseUrl: string | null;
+  displayName: string;
+}
+
 export const outlineSchema = z.object({
   leadAnswer: z
     .string()
@@ -55,6 +68,11 @@ export const outlineSchema = z.object({
 export type Outline = z.infer<typeof outlineSchema>;
 
 // Permissive on purpose (see file header) — `validation.ts` is the real gate.
+// `schemaJsonLd` is deliberately absent from what the model is asked to
+// produce (see `geoSeoModelOutputSchema` below) — it's built deterministically
+// in steps/geo-seo-optimize.ts from data the pipeline already has, not
+// generated freehand, so this full-output type still carries it for
+// downstream consumers even though no `generateObject` call targets it.
 export const geoSeoOutputSchema = z.object({
   metaTitle: z.string(),
   metaDescription: z.string(),
@@ -64,3 +82,17 @@ export const geoSeoOutputSchema = z.object({
   readabilityScore: z.number(),
 });
 export type GeoSeoOutput = z.infer<typeof geoSeoOutputSchema>;
+
+// What the model actually generates for geo_seo_optimize — everything in
+// `geoSeoOutputSchema` except `schemaJsonLd`. Asking a model to hand-
+// construct nested JSON-LD (an Article node plus a FAQPage node built from
+// the draft's own FAQ section) from a prose description proved unreliable
+// in practice — even with an explicit shape example and feedback-driven
+// retries, Gemini Flash failed to include both required nodes on 3 straight
+// attempts in one real run. The FAQ content and headline this needs already
+// exist elsewhere in the pipeline (outline.faqSection, this same object's
+// own metaTitle/metaDescription), so there's no reason to regenerate them
+// here at all — see `steps/geo-seo-optimize.ts`'s `buildSchemaJsonLd`.
+export const geoSeoModelOutputSchema = geoSeoOutputSchema.omit({
+  schemaJsonLd: true,
+});

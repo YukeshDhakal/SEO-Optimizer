@@ -5,19 +5,27 @@
 // directly unit-testable (see __tests__/pipeline.test.ts), matching
 // packages/cms-adapters' precedent of staying deliberately pure/testable.
 import { marked } from "marked";
+import type { ContentType } from "./content-guidelines";
 import { runPolicyCheck } from "./policy-check";
+import type { SiteIdentity } from "./schemas";
 import { draft } from "./steps/draft";
 import { geoSeoOptimize } from "./steps/geo-seo-optimize";
 import { outline as outlineStep } from "./steps/outline";
 import { research as researchStep } from "./steps/research";
 import { selectTopic } from "./steps/topic-selection";
-import { validateGeoSeoOutput } from "./validation";
+import {
+  validateContentGuidelines,
+  validateGeoSeoOutput,
+  validateSiteReference,
+} from "./validation";
 
 export type PipelineStepName =
   | "topic_selection"
   | "research"
   | "outline"
   | "draft"
+  | "content_guidelines_check"
+  | "site_reference_check"
   | "geo_seo_optimize"
   | "policy_check";
 
@@ -36,6 +44,16 @@ export interface PipelineCallbacks {
 export interface RunPipelineInput {
   organizationId: string;
   topicHint: string;
+  // The site this post is being written for — optional so existing callers
+  // (and this file's own pre-existing tests) that predate this field keep
+  // working; when omitted, the site-reference-back requirement is simply
+  // never checked. See `PipelineValidationError` and `validateSiteReference`
+  // (validation.ts) for the actual enforcement.
+  site?: SiteIdentity;
+  // "blog" (default) or "faq" — threaded into both outline and draft so
+  // their structure/prompt guidance stays consistent with each other. See
+  // content-guidelines.ts.
+  contentType?: ContentType;
 }
 
 export interface PipelinePost {
@@ -53,8 +71,8 @@ export type PipelineResult =
   | { status: "failed"; error: string };
 
 export class PipelineValidationError extends Error {
-  constructor(readonly issues: string[]) {
-    super(`geo_seo_optimize validation failed: ${issues.join("; ")}`);
+  constructor(readonly issues: string[], stage = "geo_seo_optimize") {
+    super(`${stage} validation failed: ${issues.join("; ")}`);
     this.name = "PipelineValidationError";
   }
 }
@@ -114,6 +132,7 @@ export const runContentPipeline = async (
       organizationId: input.organizationId,
       topic,
       research: researchResult,
+      contentType: input.contentType,
     })
   );
 
@@ -131,8 +150,42 @@ export const runContentPipeline = async (
         outline: outlineResult,
         research: researchResult,
         feedback,
+        site: input.site,
+        contentType: input.contentType,
       })
     );
+
+    // Checked right here, before geo_seo_optimize, deliberately — both
+    // checks below are entirely draft's own output, so a failure is
+    // already knowable without spending a geo_seo_optimize model call on a
+    // draft that's going to be rejected anyway.
+    const guidelinesCheck = await runStep("content_guidelines_check", () =>
+      Promise.resolve(validateContentGuidelines(draftMarkdown))
+    );
+    if (!guidelinesCheck.valid) {
+      validationIssues = guidelinesCheck.issues;
+      if (attempt === MAX_DRAFT_ATTEMPTS) {
+        throw new PipelineValidationError(guidelinesCheck.issues, "content_guidelines_check");
+      }
+      feedback = guidelinesCheck.issues.join("; ");
+      continue;
+    }
+
+    // Only runs when a site was actually given (existing callers/tests
+    // that omit it are unaffected).
+    if (input.site) {
+      const siteCheck = await runStep("site_reference_check", () =>
+        Promise.resolve(validateSiteReference(draftMarkdown, input.site as SiteIdentity))
+      );
+      if (!siteCheck.valid) {
+        validationIssues = siteCheck.issues;
+        if (attempt === MAX_DRAFT_ATTEMPTS) {
+          throw new PipelineValidationError(siteCheck.issues, "site_reference_check");
+        }
+        feedback = siteCheck.issues.join("; ");
+        continue;
+      }
+    }
 
     let geoSeoResult: Awaited<ReturnType<typeof geoSeoOptimize>>;
     try {
@@ -141,6 +194,14 @@ export const runContentPipeline = async (
           organizationId: input.organizationId,
           draftMarkdown,
           research: researchResult,
+          outline: outlineResult,
+          // Same feedback string handed to `draft` above — metaDescription
+          // length is entirely this step's own output, so without this a
+          // validation failure on it specifically could never self-correct
+          // across retries (see GeoSeoOptimizeInput.feedback's own comment
+          // for why).
+          feedback,
+          site: input.site,
         })
       );
     } catch (error) {

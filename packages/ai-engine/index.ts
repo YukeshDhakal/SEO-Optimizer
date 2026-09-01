@@ -1,4 +1,6 @@
-export { getModel, getSearchTool } from "./model";
+export { getModel } from "./model";
+export { webSearchTool } from "./search";
+export type { WebSearchResult } from "./search";
 export { generateEmbedding } from "./embedding";
 export { runPolicyCheck } from "./policy-check";
 export type { PolicyCheckResult } from "./policy-check";
@@ -14,8 +16,13 @@ export type {
   RunPipelineInput,
 } from "./pipeline";
 export * from "./schemas";
-export { validateGeoSeoOutput } from "./validation";
+export {
+  validateContentGuidelines,
+  validateGeoSeoOutput,
+  validateSiteReference,
+} from "./validation";
 export type { ValidationResult } from "./validation";
+export type { ContentType } from "./content-guidelines";
 
 // Individual step functions, exported for Phase 4's `@repo/workflows` package
 // to wrap as durable Workflow DevKit steps. `pipeline.ts`'s own

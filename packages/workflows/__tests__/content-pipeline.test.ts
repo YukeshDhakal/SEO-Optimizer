@@ -21,7 +21,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // `pipeline.test.ts` precedent of mocking each step module individually
 // rather than the package's barrel file.
 vi.mock("@repo/ai-engine", async () => {
-  const { validateGeoSeoOutput } = await import("@repo/ai-engine/validation");
+  const { validateContentGuidelines, validateGeoSeoOutput, validateSiteReference } =
+    await import("@repo/ai-engine/validation");
   return {
     selectTopic: vi.fn(),
     research: vi.fn(),
@@ -30,6 +31,21 @@ vi.mock("@repo/ai-engine", async () => {
     geoSeoOptimize: vi.fn(),
     runPolicyCheck: vi.fn(),
     validateGeoSeoOutput,
+    // Real implementation — none of this file's fixture draft strings
+    // contain any of content-guidelines.ts's BANNED_PHRASES, so this is a
+    // no-op for every pre-existing test, same reasoning as
+    // validateSiteReference below. The dedicated content-guidelines tests
+    // further down are what actually exercise its failure path.
+    validateContentGuidelines,
+    // Real implementation, same reasoning as validateGeoSeoOutput above —
+    // these tests should prove the actual site-reference gate drives the
+    // retry loop, not a stand-in. `site.baseUrl` is null in every existing
+    // fixture (the generic `makeBuilder` mock below returns no
+    // `base_url`/`display_name` for `site_connections`), so the real
+    // `validateSiteReference` falls back to its name-mention check — see
+    // the dedicated `getSiteIdentity`/site-reference tests below for the
+    // cases that actually exercise a non-null `baseUrl`.
+    validateSiteReference,
     // Phase 5's `guardrails.ts` imports this for the duplicate-content
     // check — defaulting to `undefined` (not `null`) still exercises the
     // same "not configured, skip" branch (`!embedding` is true either way)
@@ -65,6 +81,15 @@ let keywordVolumeOverride: {
   gscRows: { query: string; clicks: number; impressions: number }[];
 } | null = null;
 
+// `null` (the default) makes `getSiteIdentity` return `{ baseUrl: null,
+// displayName: "" }` — `validateSiteReference` then checks for an empty
+// string, which every draft trivially "contains", so the new
+// site_reference_check gate is a no-op for every pre-existing test in this
+// file (same reasoning as `keywordVolumeOverride`'s unset-by-default
+// fail-open pattern above). Only the dedicated site-reference tests below
+// set this to exercise the gate's actual pass/fail/retry behavior.
+let siteIdentityOverride: { baseUrl: string | null; displayName: string } | null = null;
+
 const makeBuilder = (table?: string) => {
   const row = { id: "row-id", ...tenantSettingsOverride };
   let result: { data: unknown; error: null } = { data: row, error: null };
@@ -72,6 +97,14 @@ const makeBuilder = (table?: string) => {
     result = { data: keywordVolumeOverride.keywordRows, error: null };
   } else if (keywordVolumeOverride && table === "search_console_queries") {
     result = { data: keywordVolumeOverride.gscRows, error: null };
+  } else if (table === "site_connections") {
+    result = {
+      data: {
+        base_url: siteIdentityOverride?.baseUrl ?? null,
+        display_name: siteIdentityOverride?.displayName ?? "",
+      },
+      error: null,
+    };
   }
   const builder: Record<string, unknown> = {};
   for (const method of ["insert", "update", "select", "eq", "order", "limit"]) {
@@ -156,6 +189,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   tenantSettingsOverride = { require_approval: false, paused: false };
   keywordVolumeOverride = null;
+  siteIdentityOverride = null;
   selectTopicMock.mockResolvedValue(TOPIC);
   researchMock.mockResolvedValue(RESEARCH);
   outlineMock.mockResolvedValue(OUTLINE);
@@ -216,6 +250,26 @@ describe("contentPipelineWorkflow retry loop", () => {
     expect(geoSeoOptimizeMock).toHaveBeenCalledTimes(2);
 
     const secondCallFeedback = draftMock.mock.calls[1][0].feedback;
+    expect(secondCallFeedback).toBeDefined();
+    expect(secondCallFeedback).toContain("FAQPage");
+  });
+
+  it("also carries feedback and the outline into the retried geo_seo_optimize call, not just draft", async () => {
+    // Regression test: metaDescription length is entirely geo_seo_optimize's
+    // own output, invisible to draft — without threading feedback into it
+    // too, a retry could re-fail identically forever (this happened for
+    // real in production before this fix, 3 straight identical failures).
+    // `outline` is threaded through separately so geo_seo_optimize can build
+    // schemaJsonLd's FAQPage node deterministically instead of generating it.
+    geoSeoOptimizeMock
+      .mockResolvedValueOnce(INVALID_GEO_SEO)
+      .mockResolvedValueOnce(VALID_GEO_SEO);
+
+    await contentPipelineWorkflow(BASE_INPUT);
+
+    expect(geoSeoOptimizeMock.mock.calls[0][0].feedback).toBeUndefined();
+    expect(geoSeoOptimizeMock.mock.calls[0][0].outline).toEqual(OUTLINE);
+    const secondCallFeedback = geoSeoOptimizeMock.mock.calls[1][0].feedback;
     expect(secondCallFeedback).toBeDefined();
     expect(secondCallFeedback).toContain("FAQPage");
   });
@@ -282,5 +336,96 @@ describe("contentPipelineWorkflow retry loop", () => {
     const result = await contentPipelineWorkflow(BASE_INPUT);
 
     expect(result.status).toBe("succeeded");
+  });
+});
+
+// The site-reference-back requirement: every generated post must reference
+// the site it's for. Deterministic (validateSiteReference, not a prompt
+// instruction alone) for the same reason every other reliability fix in
+// this pipeline is deterministic — see validation.ts's own comment.
+describe("contentPipelineWorkflow site reference gate", () => {
+  it("retries draft (skipping geo_seo_optimize) when the draft has no link back to the site, then succeeds", async () => {
+    siteIdentityOverride = { baseUrl: "https://quoteengine.dev", displayName: "Quote Engine" };
+    draftMock
+      .mockResolvedValueOnce("# Draft markdown\n\nNo link here.")
+      .mockResolvedValueOnce(
+        "# Draft markdown\n\nSee [get a quote](https://quoteengine.dev) today."
+      );
+    geoSeoOptimizeMock.mockResolvedValueOnce(VALID_GEO_SEO);
+
+    const result = await contentPipelineWorkflow(BASE_INPUT);
+
+    expect(result.status).toBe("succeeded");
+    expect(draftMock).toHaveBeenCalledTimes(2);
+    // The whole point of checking site-reference before geo_seo_optimize:
+    // the first (failing) draft never reaches it at all.
+    expect(geoSeoOptimizeMock).toHaveBeenCalledTimes(1);
+    const retryFeedback = draftMock.mock.calls[1][0].feedback;
+    expect(retryFeedback).toContain("quoteengine.dev");
+  });
+
+  it("accepts a link to a subpath of the site's base_url, not just the exact homepage URL", async () => {
+    siteIdentityOverride = { baseUrl: "https://quoteengine.dev", displayName: "Quote Engine" };
+    draftMock.mockResolvedValueOnce(
+      "# Draft markdown\n\nStart with a [free quote](https://quoteengine.dev/get-started)."
+    );
+    geoSeoOptimizeMock.mockResolvedValueOnce(VALID_GEO_SEO);
+
+    const result = await contentPipelineWorkflow(BASE_INPUT);
+
+    expect(result.status).toBe("succeeded");
+    expect(draftMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("falls back to a plain name mention (no link required) when the site has no base_url yet", async () => {
+    siteIdentityOverride = { baseUrl: null, displayName: "Quote Engine" };
+    draftMock.mockResolvedValueOnce(
+      "# Draft markdown\n\nQuote Engine can help you compare rates."
+    );
+    geoSeoOptimizeMock.mockResolvedValueOnce(VALID_GEO_SEO);
+
+    const result = await contentPipelineWorkflow(BASE_INPUT);
+
+    expect(result.status).toBe("succeeded");
+    expect(draftMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns status:'failed' after 3 attempts if the draft never references the site, without ever calling geo_seo_optimize", async () => {
+    siteIdentityOverride = { baseUrl: "https://quoteengine.dev", displayName: "Quote Engine" };
+    draftMock.mockResolvedValue("# Draft markdown\n\nStill no link.");
+
+    const result = await contentPipelineWorkflow(BASE_INPUT);
+
+    expect(result.status).toBe("failed");
+    expect(result.reason).toContain("quoteengine.dev");
+    expect(draftMock).toHaveBeenCalledTimes(3);
+    expect(geoSeoOptimizeMock).not.toHaveBeenCalled();
+  });
+});
+
+describe("contentPipelineWorkflow content guidelines gate", () => {
+  it("retries draft (skipping geo_seo_optimize) when the draft contains a banned phrase, then succeeds", async () => {
+    draftMock
+      .mockResolvedValueOnce("# Draft markdown\n\nIt depends on your policy.")
+      .mockResolvedValueOnce("# Draft markdown\n\nMost insurers require notice within 30 days.");
+    geoSeoOptimizeMock.mockResolvedValueOnce(VALID_GEO_SEO);
+
+    const result = await contentPipelineWorkflow(BASE_INPUT);
+
+    expect(result.status).toBe("succeeded");
+    expect(draftMock).toHaveBeenCalledTimes(2);
+    expect(geoSeoOptimizeMock).toHaveBeenCalledTimes(1);
+    expect(draftMock.mock.calls[1][0].feedback).toContain("it depends");
+  });
+
+  it("returns status:'failed' after 3 attempts if the draft always contains a banned phrase, without ever calling geo_seo_optimize", async () => {
+    draftMock.mockResolvedValue("# Draft markdown\n\nAs mentioned above, rates vary.");
+
+    const result = await contentPipelineWorkflow(BASE_INPUT);
+
+    expect(result.status).toBe("failed");
+    expect(result.reason).toContain("as mentioned above");
+    expect(draftMock).toHaveBeenCalledTimes(3);
+    expect(geoSeoOptimizeMock).not.toHaveBeenCalled();
   });
 });

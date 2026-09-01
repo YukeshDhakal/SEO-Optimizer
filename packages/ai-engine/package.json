@@ -10,7 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.113",
+    "@ai-sdk/google": "^3.0.119",
     "@ai-sdk/openai": "^3.0.101",
     "@t3-oss/env-nextjs": "^0.13.10",
     "ai": "^6.0.116",

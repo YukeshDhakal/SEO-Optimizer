@@ -8,7 +8,7 @@
 // RLS-scoped authorization checks *before* calling `start()` — these steps
 // trust the organizationId/siteConnectionId/userId they're given.
 import { database } from "@repo/database";
-import type { PipelineStepName } from "@repo/ai-engine";
+import type { ContentType, PipelineStepName } from "@repo/ai-engine";
 import type { Json, TablesInsert } from "@repo/database";
 import { marked } from "marked";
 
@@ -19,6 +19,10 @@ export interface CreateRunInput {
   topicHint: string;
   triggerType: "manual" | "scheduled";
   scheduleId?: string;
+  // "blog" (default) or "faq" — see @repo/ai-engine's content-guidelines.ts.
+  // Stored into pipeline_runs.input below (not just held in memory) so the
+  // run detail page can show which mode a given run used.
+  contentType?: ContentType;
 }
 
 export const createPipelineRun = async (
@@ -32,7 +36,10 @@ export const createPipelineRun = async (
     created_by: input.createdBy,
     trigger_type: input.triggerType,
     schedule_id: input.scheduleId ?? null,
-    input: { topicHint: input.topicHint } as Json,
+    input: {
+      topicHint: input.topicHint,
+      contentType: input.contentType ?? "blog",
+    } as Json,
   };
 
   const { data, error } = await database
@@ -68,12 +75,41 @@ export const getTenantSettings = async (
   };
 };
 
+// Feeds draft.ts/geo-seo-optimize.ts's `site` field (see @repo/ai-engine's
+// SiteIdentity) — this is where the site-reference-back requirement's data
+// actually comes from. `base_url` is nullable (a site not yet fully
+// connected), which is exactly why SiteIdentity.baseUrl is nullable too —
+// the requirement degrades to a plain name-mention rather than a real link
+// in that case (see validateSiteReference in @repo/ai-engine). Called
+// directly in the workflow body, not wrapped in runTrackedStep — same as
+// getTenantSettings above, a plain lookup with no pipeline_run_steps row of
+// its own.
+export const getSiteIdentity = async (
+  siteConnectionId: string
+): Promise<{ baseUrl: string | null; displayName: string }> => {
+  "use step";
+
+  const { data } = await database
+    .from("site_connections")
+    .select("base_url, display_name")
+    .eq("id", siteConnectionId)
+    .maybeSingle();
+
+  return {
+    baseUrl: data?.base_url ?? null,
+    displayName: data?.display_name ?? "our site",
+  };
+};
+
 // Phase 5 guardrail checks (kill_switch_check/rate_limit_check/
 // duplicate_check) get recorded through this same bookkeeping as the
 // original pipeline steps - `pipeline_run_steps.step_name` is a plain
 // `text` column, no CHECK constraint, so widening this union is the only
 // change needed to make them show up in the run detail UI identically to
 // every other step.
+// `site_reference_check` comes in via `PipelineStepName` itself now (added
+// there for the site-reference-back requirement) — no separate entry needed
+// here.
 export type ExtendedStepName =
   | PipelineStepName
   | "approval_gate"

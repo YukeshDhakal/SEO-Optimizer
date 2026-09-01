@@ -8,7 +8,12 @@
 // restrictions (no fetch/Node modules) and what actually makes a crash
 // mid-pipeline resume at the unfinished step instead of restarting.
 import { createHook } from "workflow";
-import { validateGeoSeoOutput, type GeoSeoOutput } from "@repo/ai-engine";
+import {
+  validateContentGuidelines,
+  validateGeoSeoOutput,
+  validateSiteReference,
+  type GeoSeoOutput,
+} from "@repo/ai-engine";
 import {
   draftStep,
   geoSeoOptimizeStep,
@@ -20,6 +25,7 @@ import {
 import {
   createPipelineRun,
   finalizeRunSucceeded,
+  getSiteIdentity,
   getTenantSettings,
   markRunBlocked,
   markRunFailed,
@@ -64,6 +70,7 @@ export async function contentPipelineWorkflow(
 
   const { runId } = await createPipelineRun(input);
   const settings = await getTenantSettings(input.organizationId);
+  const site = await getSiteIdentity(input.siteConnectionId);
 
   // Runs one step, bracketed by pipeline_run_steps bookkeeping — mirrors
   // Phase 3's `runStep` helper, just backed by real steps now.
@@ -155,7 +162,12 @@ export async function contentPipelineWorkflow(
   );
 
   const outlineResult = await runTrackedStep("outline", () =>
-    outlineStep({ organizationId: input.organizationId, topic, research: researchResult })
+    outlineStep({
+      organizationId: input.organizationId,
+      topic,
+      research: researchResult,
+      contentType: input.contentType,
+    })
   );
 
   let draftMarkdown = "";
@@ -170,8 +182,43 @@ export async function contentPipelineWorkflow(
         outline: outlineResult,
         research: researchResult,
         feedback,
+        site,
+        contentType: input.contentType,
       })
     );
+
+    // Checked right here, before geo_seo_optimize, deliberately — both
+    // checks below are entirely draft's own output, so a failure is
+    // already knowable without spending a geo_seo_optimize model call
+    // (real money, per this session's cost-minimization directive) on a
+    // draft that's going to be rejected anyway. Each its own tracked step,
+    // same as duplicate_check/keyword_volume_check, so they show in the
+    // run detail timeline like every other gate.
+    const guidelinesCheck = await runTrackedStep("content_guidelines_check", () =>
+      Promise.resolve(validateContentGuidelines(draftMarkdown))
+    );
+    if (!guidelinesCheck.valid) {
+      if (attempt === MAX_DRAFT_ATTEMPTS) {
+        const message = `content_guidelines_check validation failed: ${guidelinesCheck.issues.join("; ")}`;
+        await markRunFailed(runId, message);
+        return { status: "failed", runId, reason: message };
+      }
+      feedback = guidelinesCheck.issues.join("; ");
+      continue;
+    }
+
+    const siteCheck = await runTrackedStep("site_reference_check", () =>
+      Promise.resolve(validateSiteReference(draftMarkdown, site))
+    );
+    if (!siteCheck.valid) {
+      if (attempt === MAX_DRAFT_ATTEMPTS) {
+        const message = `site_reference_check validation failed: ${siteCheck.issues.join("; ")}`;
+        await markRunFailed(runId, message);
+        return { status: "failed", runId, reason: message };
+      }
+      feedback = siteCheck.issues.join("; ");
+      continue;
+    }
 
     let geoSeoResult: GeoSeoOutput;
     try {
@@ -180,6 +227,16 @@ export async function contentPipelineWorkflow(
           organizationId: input.organizationId,
           draftMarkdown,
           research: researchResult,
+          outline: outlineResult,
+          // Same feedback string handed to `draftStep` above — metaDescription
+          // length is entirely this step's own output, invisible to and
+          // uninfluenced by the draft step, so a validation failure on it
+          // specifically could never self-correct across retries without
+          // this (confirmed live: a real run failed 3 straight times on an
+          // identical error before this fix, because this step re-ran the
+          // same prompt with zero awareness it had already gotten it wrong).
+          feedback,
+          site,
         })
       );
     } catch (error) {

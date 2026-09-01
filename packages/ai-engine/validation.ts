@@ -1,4 +1,5 @@
-import type { GeoSeoOutput } from "./schemas";
+import { BANNED_PHRASES } from "./content-guidelines";
+import type { GeoSeoOutput, SiteIdentity } from "./schemas";
 
 export interface ValidationResult {
   valid: boolean;
@@ -33,9 +34,9 @@ export const validateGeoSeoOutput = (
 ): ValidationResult => {
   const issues: string[] = [];
 
-  if (output.metaTitle.length < 10 || output.metaTitle.length > 70) {
+  if (output.metaTitle.length < 10 || output.metaTitle.length > 60) {
     issues.push(
-      `metaTitle must be 10-70 characters (got ${output.metaTitle.length})`
+      `metaTitle must be 10-60 characters (got ${output.metaTitle.length}) - 60 is the SERP display limit`
     );
   }
 
@@ -75,5 +76,80 @@ export const validateGeoSeoOutput = (
     );
   }
 
+  return { valid: issues.length === 0, issues };
+};
+
+const stripWww = (hostname: string): string => hostname.replace(/^www\./, "");
+
+// Deterministic, not prompt-only — matches the session's established
+// pattern (buildSchemaJsonLd, text-sanitize.ts): a model instruction to
+// "link back to the site" is exactly the kind of thing that slipped under
+// retry pressure for the JSON-LD Article/FAQPage nodes, so this actually
+// checks the draft's markdown for a real link (or, when the site has no
+// base_url yet, a plain-text name mention) rather than trusting the prompt
+// alone. Runs against `draftMarkdown` directly — independent of
+// `validateGeoSeoOutput`, which only ever sees geo_seo_optimize's output —
+// so callers can check it right after the `draft` step, before spending a
+// geo_seo_optimize call on a draft that's already known to be missing it.
+export const validateSiteReference = (
+  draftMarkdown: string,
+  site: SiteIdentity
+): ValidationResult => {
+  if (!site.baseUrl) {
+    const mentioned = draftMarkdown
+      .toLowerCase()
+      .includes(site.displayName.toLowerCase());
+    return mentioned
+      ? { valid: true, issues: [] }
+      : {
+          valid: false,
+          issues: [`draft must mention "${site.displayName}" by name at least once`],
+        };
+  }
+
+  let targetHost: string;
+  try {
+    targetHost = stripWww(new URL(site.baseUrl).hostname);
+  } catch {
+    // An unparseable base_url shouldn't block every generation — degrade to
+    // the no-URL name-mention rule rather than hard-failing on bad site data.
+    return validateSiteReference(draftMarkdown, { ...site, baseUrl: null });
+  }
+
+  const linkTargets = [...draftMarkdown.matchAll(/\]\(([^)]+)\)/g)].map(
+    (match) => match[1]
+  );
+  const hasSiteLink = linkTargets.some((href) => {
+    try {
+      return stripWww(new URL(href, site.baseUrl ?? undefined).hostname) === targetHost;
+    } catch {
+      return false;
+    }
+  });
+
+  return hasSiteLink
+    ? { valid: true, issues: [] }
+    : {
+        valid: false,
+        issues: [`draft must include a markdown link back to ${targetHost}`],
+      };
+};
+
+// Deterministic backstop for the SEO + GEO Content Guidelines' literal
+// "never write X" phrases (content-guidelines.ts's BANNED_PHRASES) — the
+// prompt already instructs the model not to use these, but per this
+// pipeline's whole track record (JSON-LD nodes, em-dashes, the site link),
+// a prompt instruction alone is not trusted for anything checkable in
+// code. Deliberately narrow: only literal, unambiguous phrases the source
+// spec calls a failure regardless of context (never a fuzzy heuristic like
+// "flag the word 'many'", which would false-positive on legitimate uses
+// like "many homeowners"). Runs against `draftMarkdown` directly, same as
+// validateSiteReference, so it can be checked right after `draft` and
+// before spending a geo_seo_optimize call on a draft already known to fail.
+export const validateContentGuidelines = (draftMarkdown: string): ValidationResult => {
+  const lower = draftMarkdown.toLowerCase();
+  const issues = BANNED_PHRASES.filter((phrase) => lower.includes(phrase)).map(
+    (phrase) => `draft must not contain the banned phrase "${phrase}"`
+  );
   return { valid: issues.length === 0, issues };
 };

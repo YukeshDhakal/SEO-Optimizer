@@ -87,6 +87,7 @@ export type Database = {
       google_ads_credentials: {
         Row: {
           created_at: string
+          error_message: string | null
           google_ads_customer_id: string | null
           id: string
           secret_ref: string | null
@@ -95,6 +96,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          error_message?: string | null
           google_ads_customer_id?: string | null
           id?: string
           secret_ref?: string | null
@@ -103,6 +105,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          error_message?: string | null
           google_ads_customer_id?: string | null
           id?: string
           secret_ref?: string | null

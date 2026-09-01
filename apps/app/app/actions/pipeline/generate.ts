@@ -27,6 +27,8 @@ export const generatePost = async (
 ): Promise<GeneratePostState> => {
   const siteConnectionId = String(formData.get("site_connection_id") ?? "");
   const topicHint = String(formData.get("topic_hint") ?? "").trim();
+  const contentTypeRaw = String(formData.get("content_type") ?? "blog");
+  const contentType = contentTypeRaw === "faq" ? "faq" : "blog";
 
   if (!(siteConnectionId && topicHint)) {
     return { error: "A topic or niche hint is required." };
@@ -67,6 +69,7 @@ export const generatePost = async (
         createdBy: user.id,
         topicHint,
         triggerType: "manual",
+        contentType,
       },
     ]);
     const result = await run.returnValue;
