@@ -107,11 +107,12 @@ Each phase is one commit on `master` (chronological, oldest first). This is the 
 | Integration | Status | Notes |
 |---|---|---|
 | Supabase (DB + Auth) | **Configured** | Project `acyauqpeykgrivrajksa`. `SUPABASE_SERVICE_ROLE_KEY` must be pasted in manually from the dashboard — no MCP tool can read it back out. |
-| Anthropic (generation) | Key required, not committed | `ANTHROPIC_API_KEY` — pipeline is inert without it. |
+| Google Gemini (generation) | Key required, not committed | `GOOGLE_GENERATIVE_AI_API_KEY` — pipeline is inert without it. Swapped from Anthropic/Claude (see `packages/ai-engine/model.ts`) for Gemini's free tier; `gemini-2.5-flash` is the model in use. |
+| Tavily (research web search) | Key required, not committed | `TAVILY_API_KEY` — replaces Anthropic's old provider-executed search tool now that generation is on Gemini (see `packages/ai-engine/search.ts`). Optional in the sense every other key here is: research degrades to the model's own knowledge (no live citations) rather than throwing if unset. Free tier: 1,000 searches/month. |
 | Google Search Console | OAuth flow built (Phase 7) | Needs `GOOGLE_OAUTH_CLIENT_ID/SECRET`, `GSC_OAUTH_STATE_SECRET`. |
 | Google Ads (Keyword Planner) | OAuth flow built (Phase 8) | Same Google Cloud client as GSC + `adwords` scope, plus `GOOGLE_ADS_DEVELOPER_TOKEN` (from an MCC account), `GOOGLE_ADS_LOGIN_CUSTOMER_ID`. |
 | Stripe | Built (Phase 6) | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`. |
-| OpenAI embeddings | **Not configured** | `OPENAI_API_KEY` — duplicate-content detection (Phase 5) degrades to skipping the check without it, by design (same posture as every other missing key). Anthropic has no embeddings endpoint, hence the second provider. |
+| OpenAI embeddings | **Not configured** | `OPENAI_API_KEY` — duplicate-content detection (Phase 5) degrades to skipping the check without it, by design (same posture as every other missing key). Neither Gemini nor Claude serve embeddings here, hence the separate provider. |
 | Upstash (rate-limit) | **Not configured** | `packages/rate-limit` unused; Phase 5's daily/weekly post caps are enforced via a direct DB count query instead. |
 | Resend (email) | Not configured | Optional. |
 | BetterStack, PostHog, Sentry, Arcjet, Svix, Liveblocks, BaseHub, Knock, GA | Not configured | All next-forge defaults, left as optional/unset. |
