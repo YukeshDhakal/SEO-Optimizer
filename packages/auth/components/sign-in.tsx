@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
+import { checkAuthRateLimit } from "../actions/check-rate-limit";
 import { createClient } from "../client";
 import { GitHubGlyph } from "./github-glyph";
 import { GoogleGlyph } from "./google-glyph";
@@ -35,6 +36,13 @@ export const SignIn = ({ nextUrl = "/" }: SignInProps) => {
     event.preventDefault();
     setError(null);
     setIsSubmitting(true);
+
+    const rateLimit = await checkAuthRateLimit("sign-in");
+    if (!rateLimit.allowed) {
+      setIsSubmitting(false);
+      setError(rateLimit.error ?? "Too many attempts. Try again shortly.");
+      return;
+    }
 
     const supabase = createClient();
     const { error: signInError } = await supabase.auth.signInWithPassword({

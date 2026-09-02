@@ -3,8 +3,8 @@ import { Redis } from "@upstash/redis";
 import { keys } from "./keys";
 
 export const redis = new Redis({
-  url: keys().UPSTASH_REDIS_REST_URL,
-  token: keys().UPSTASH_REDIS_REST_TOKEN,
+  url: keys().KV_REST_API_URL,
+  token: keys().KV_REST_API_TOKEN,
 });
 
 export const createRateLimiter = (props: Omit<RatelimitConfig, "redis">) =>
