@@ -11,4 +11,4 @@ export const createClient = () => {
   );
 };
 
-export type { Session, User } from "@supabase/supabase-js";
+export type { Session, User, UserIdentity } from "@supabase/supabase-js";

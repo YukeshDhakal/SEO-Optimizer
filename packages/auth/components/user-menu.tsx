@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../provider";
 
@@ -23,7 +24,13 @@ export const UserMenu = () => {
 
   return (
     <div className="flex w-full items-center justify-between gap-2 overflow-hidden">
-      <span className="truncate text-sm">{user.email}</span>
+      <Link
+        className="truncate text-sm hover:underline"
+        href="/account"
+        title="Account settings"
+      >
+        {user.email}
+      </Link>
       <button
         className="shrink-0 text-muted-foreground text-xs hover:text-foreground"
         onClick={handleSignOut}
