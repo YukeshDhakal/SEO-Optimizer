@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { DeleteAccountPanel } from "./delete-account-panel";
 import { IdentityManager } from "./identity-manager";
+import { ProfilePanel } from "./profile-panel";
 
 export const metadata: Metadata = {
   title: "Account",
@@ -11,13 +13,15 @@ const AccountPage = () => (
     <div>
       <h1 className="font-display text-3xl tracking-tight">ACCOUNT</h1>
       <p className="mt-1 text-muted-foreground text-sm">
-        How you sign in to Quillrun — connected providers and your password.
+        Your profile, how you sign in, and account-level settings.
       </p>
     </div>
-    <div className="max-w-lg">
+    <div className="flex max-w-lg flex-col gap-6">
+      <ProfilePanel />
       <Suspense fallback={null}>
         <IdentityManager />
       </Suspense>
+      <DeleteAccountPanel />
     </div>
   </div>
 );
