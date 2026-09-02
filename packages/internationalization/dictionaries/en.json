@@ -180,7 +180,6 @@
           "date": "Date",
           "firstName": "First name",
           "lastName": "Last name",
-          "resume": "Upload resume",
           "cta": "Book the meeting"
         }
       }

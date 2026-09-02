@@ -55,7 +55,7 @@ export const ContactForm = ({ dictionary }: ContactFormProps) => {
             <div className="flex max-w-sm flex-col gap-4 border-[3px] border-foreground bg-card p-8 shadow-[8px_8px_0_#111]">
               <p className="font-display text-lg">{dictionary.web.contact.hero.form.title}</p>
               <div className="grid w-full max-w-sm items-center gap-1">
-                <Label htmlFor="picture">
+                <Label htmlFor="meeting-date">
                   {dictionary.web.contact.hero.form.date}
                 </Label>
                 <Popover>
@@ -97,13 +97,6 @@ export const ContactForm = ({ dictionary }: ContactFormProps) => {
                 </Label>
                 <Input id="lastname" type="text" />
               </div>
-              <div className="grid w-full max-w-sm items-center gap-1">
-                <Label htmlFor="picture">
-                  {dictionary.web.contact.hero.form.resume}
-                </Label>
-                <Input id="picture" type="file" />
-              </div>
-
               <Button className="w-full gap-4">
                 {dictionary.web.contact.hero.form.cta}{" "}
                 <MoveRight className="h-4 w-4" />
