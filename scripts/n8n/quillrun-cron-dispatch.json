@@ -1,0 +1,117 @@
+{
+  "name": "Quillrun - dispatch-runs cron workaround",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "id": "a1b2c3d4-0001-4000-8000-000000000001",
+      "name": "Every 5 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-400, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://quillrun-api.vercel.app/cron/dispatch-runs",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "a1b2c3d4-0002-4000-8000-000000000002",
+      "name": "Call dispatch-runs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-160, 0],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Quillrun CRON_SECRET"
+        }
+      },
+      "notesInFlow": true,
+      "notes": "Credential must send header: Authorization = Bearer <CRON_SECRET>. Use the same value as the CRON_SECRET env var set on the quillrun-api Vercel project."
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b1",
+              "name": "checked",
+              "type": "number",
+              "value": "={{ $json.checked }}"
+            },
+            {
+              "id": "b2",
+              "name": "started",
+              "type": "number",
+              "value": "={{ ($json.results || []).filter(r => r.action === 'started').length }}"
+            },
+            {
+              "id": "b3",
+              "name": "skipped",
+              "type": "number",
+              "value": "={{ ($json.results || []).filter(r => r.action !== 'started').length }}"
+            },
+            {
+              "id": "b4",
+              "name": "emergencyStop",
+              "type": "boolean",
+              "value": "={{ $json.skipped === 'emergency_stop' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a1b2c3d4-0003-4000-8000-000000000003",
+      "name": "Summarize run",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [80, 0]
+    }
+  ],
+  "connections": {
+    "Every 5 minutes": {
+      "main": [
+        [
+          {
+            "node": "Call dispatch-runs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call dispatch-runs": {
+      "main": [
+        [
+          {
+            "node": "Summarize run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "quillrun-local"
+  }
+}

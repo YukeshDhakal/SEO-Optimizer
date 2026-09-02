@@ -1,0 +1,151 @@
+{
+  "name": "Quillrun - recommendation engine",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 4
+            }
+          ]
+        }
+      },
+      "id": "c1d2e3f4-0001-4000-8000-000000000001",
+      "name": "Every 4 hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-400, 0]
+    },
+    {
+      "parameters": {
+        "url": "https://quillrun-api.vercel.app/cron/sync-url-inspections",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "c1d2e3f4-0002-4000-8000-000000000002",
+      "name": "Call sync-url-inspections",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-160, 0],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Quillrun CRON_SECRET"
+        }
+      },
+      "notesInFlow": true,
+      "notes": "Same Header Auth credential as the dispatch-runs workflow: Authorization = Bearer <CRON_SECRET>, matching the CRON_SECRET env var on the quillrun-api Vercel project. Longer timeout than dispatch-runs because this loops up to 20 Google URL Inspection calls per connected site."
+    },
+    {
+      "parameters": {
+        "url": "https://quillrun-api.vercel.app/cron/generate-content-recommendations",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "c1d2e3f4-0003-4000-8000-000000000003",
+      "name": "Call generate-content-recommendations",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [80, 0],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "REPLACE_WITH_YOUR_CREDENTIAL_ID",
+          "name": "Quillrun CRON_SECRET"
+        }
+      },
+      "notesInFlow": true,
+      "notes": "Chained after the inspection sync (main -> main) rather than given its own Schedule Trigger: n8n awaits the first node's response before firing this one, so recommendations are always generated against freshly-synced inspection verdicts. Two independent triggers would drift."
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d1",
+              "name": "inspectionsChecked",
+              "type": "number",
+              "value": "={{ $('Call sync-url-inspections').item.json.checked }}"
+            },
+            {
+              "id": "d2",
+              "name": "inspectionErrors",
+              "type": "number",
+              "value": "={{ ($('Call sync-url-inspections').item.json.results || []).filter(r => String(r.action).startsWith('error:')).length }}"
+            },
+            {
+              "id": "d3",
+              "name": "recommendationsChecked",
+              "type": "number",
+              "value": "={{ $json.checked }}"
+            },
+            {
+              "id": "d4",
+              "name": "recommendationErrors",
+              "type": "number",
+              "value": "={{ ($json.results || []).filter(r => String(r.action).startsWith('error:')).length }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c1d2e3f4-0004-4000-8000-000000000004",
+      "name": "Summarize run",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [320, 0]
+    }
+  ],
+  "connections": {
+    "Every 4 hours": {
+      "main": [
+        [
+          {
+            "node": "Call sync-url-inspections",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call sync-url-inspections": {
+      "main": [
+        [
+          {
+            "node": "Call generate-content-recommendations",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call generate-content-recommendations": {
+      "main": [
+        [
+          {
+            "node": "Summarize run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "quillrun-local"
+  }
+}

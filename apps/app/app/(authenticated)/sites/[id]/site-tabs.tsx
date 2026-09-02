@@ -15,12 +15,13 @@ const TABS = [
   { key: "posts", label: "Posts" },
   { key: "posts/publish", label: "Publish now" },
   { key: "schedule", label: "Schedule" },
+  { key: "recommendations", label: "Recommendations" },
 ];
 
 // The tab row from the Quillrun Design handoff's site-detail screens
-// (Overview/Generate/Runs/Posts/Publish now/Schedule) - one shared
-// component instead of each of those six pages reimplementing its own
-// header nav.
+// (Overview/Generate/Runs/Posts/Publish now/Schedule, plus Phase 9's
+// Recommendations) - one shared component instead of each of those pages
+// reimplementing its own header nav.
 export const SiteTabs = ({ siteId }: SiteTabsProps) => {
   const pathname = usePathname();
   const base = `/sites/${siteId}`;
@@ -41,6 +42,9 @@ export const SiteTabs = ({ siteId }: SiteTabsProps) => {
     }
     if (rest.startsWith("schedule")) {
       return "schedule";
+    }
+    if (rest.startsWith("recommendations")) {
+      return "recommendations";
     }
     return "";
   })();

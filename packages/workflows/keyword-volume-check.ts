@@ -24,15 +24,27 @@ const fuzzyMatch = (candidate: string, targetNormalized: string): boolean => {
   );
 };
 
+// Exported for apps/api's generate-content-recommendations cron, which has to
+// associate GSC queries and Keyword Planner terms to posts using exactly this
+// matcher. Re-exported rather than reimplemented on purpose: two copies of a
+// matching heuristic drift, and a recommendation that disagrees with the
+// keyword-volume quality gate about what "matches" would be a real bug.
+// `fuzzyMatchKeyword` normalizes both sides, unlike the internal `fuzzyMatch`
+// above which expects a pre-normalized target.
+export const normalizeKeyword = normalize;
+
+export const fuzzyMatchKeyword = (candidate: string, target: string): boolean =>
+  fuzzyMatch(candidate, normalize(target));
+
 export interface KeywordVolumeCheckResult {
   blocked: boolean;
   reasons: string[];
 }
 
 interface EvaluateKeywordVolumeInput {
-  keyword: string;
   avgMonthlySearches: number | null;
   hasKeywordResearchData: boolean;
+  keyword: string;
   matchedGscQuery: { clicks: number; impressions: number } | null;
 }
 
@@ -78,8 +90,8 @@ export const evaluateKeywordVolume = (
 };
 
 export interface KeywordVolumeCheckStepInput {
-  siteConnectionId: string;
   primaryKeyword: string;
+  siteConnectionId: string;
 }
 
 // Real I/O (2 parallel DB reads) — inlined directly in the step rather than

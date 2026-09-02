@@ -19,6 +19,14 @@
     {
       "path": "/cron/sync-keyword-research",
       "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/cron/sync-url-inspections",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/cron/generate-content-recommendations",
+      "schedule": "30 4 * * *"
     }
   ]
 }

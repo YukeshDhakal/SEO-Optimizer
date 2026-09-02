@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.17"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
@@ -77,6 +77,82 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "cms_credentials_site_connection_id_fkey"
+            columns: ["site_connection_id"]
+            isOneToOne: false
+            referencedRelation: "site_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      content_recommendations: {
+        Row: {
+          actioned_at: string | null
+          created_at: string
+          description: string
+          dismissed_at: string | null
+          id: string
+          metrics: Json
+          organization_id: string
+          post_id: string | null
+          priority: string
+          recommendation_type: string
+          site_connection_id: string
+          status: string
+          subject_key: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          actioned_at?: string | null
+          created_at?: string
+          description: string
+          dismissed_at?: string | null
+          id?: string
+          metrics?: Json
+          organization_id: string
+          post_id?: string | null
+          priority?: string
+          recommendation_type: string
+          site_connection_id: string
+          status?: string
+          subject_key: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          actioned_at?: string | null
+          created_at?: string
+          description?: string
+          dismissed_at?: string | null
+          id?: string
+          metrics?: Json
+          organization_id?: string
+          post_id?: string | null
+          priority?: string
+          recommendation_type?: string
+          site_connection_id?: string
+          status?: string
+          subject_key?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_recommendations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_recommendations_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_recommendations_site_connection_id_fkey"
             columns: ["site_connection_id"]
             isOneToOne: false
             referencedRelation: "site_connections"
@@ -717,6 +793,66 @@ export type Database = {
           },
         ]
       }
+      url_inspections: {
+        Row: {
+          coverage_state: string | null
+          id: string
+          index_verdict: string | null
+          indexing_state: string | null
+          inspected_at: string
+          inspected_url: string
+          inspection_result_link: string | null
+          last_crawl_time: string | null
+          page_fetch_state: string | null
+          post_id: string
+          robots_txt_state: string | null
+          site_connection_id: string
+        }
+        Insert: {
+          coverage_state?: string | null
+          id?: string
+          index_verdict?: string | null
+          indexing_state?: string | null
+          inspected_at?: string
+          inspected_url: string
+          inspection_result_link?: string | null
+          last_crawl_time?: string | null
+          page_fetch_state?: string | null
+          post_id: string
+          robots_txt_state?: string | null
+          site_connection_id: string
+        }
+        Update: {
+          coverage_state?: string | null
+          id?: string
+          index_verdict?: string | null
+          indexing_state?: string | null
+          inspected_at?: string
+          inspected_url?: string
+          inspection_result_link?: string | null
+          last_crawl_time?: string | null
+          page_fetch_state?: string | null
+          post_id?: string
+          robots_txt_state?: string | null
+          site_connection_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "url_inspections_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "url_inspections_site_connection_id_fkey"
+            columns: ["site_connection_id"]
+            isOneToOne: false
+            referencedRelation: "site_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       usage_counters: {
         Row: {
           ai_cost_usd: number
@@ -897,12 +1033,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -926,11 +1062,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -951,11 +1087,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -976,11 +1112,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -993,11 +1129,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
