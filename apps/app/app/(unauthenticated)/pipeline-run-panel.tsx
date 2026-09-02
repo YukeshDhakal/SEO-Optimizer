@@ -32,9 +32,7 @@ export const PipelineRunPanel = () => (
       className="relative flex w-fit items-center gap-2.5 transition-opacity hover:opacity-80"
       href={env.NEXT_PUBLIC_WEB_URL}
     >
-      <span className="flex size-[30px] items-center justify-center border-[3px] border-foreground bg-foreground">
-        <Feather aria-hidden="true" className="h-4 w-4 text-background" strokeWidth={2.5} />
-      </span>
+      <Feather aria-hidden="true" className="h-7 w-7 text-primary" strokeWidth={2.25} />
       <span className="font-display text-xl tracking-tight">QUILLRUN</span>
     </Link>
 
