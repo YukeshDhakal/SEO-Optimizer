@@ -4,12 +4,20 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { createClient } from "../client";
+import { GitHubGlyph } from "./github-glyph";
 import { GoogleGlyph } from "./google-glyph";
+import { MicrosoftGlyph } from "./microsoft-glyph";
 
 // See sign-in.tsx for why this deliberately avoids @repo/design-system.
 interface SignUpProps {
   readonly nextUrl?: string;
 }
+
+const OAUTH_PROVIDERS = [
+  { id: "google", label: "Google", Icon: GoogleGlyph },
+  { id: "github", label: "GitHub", Icon: GitHubGlyph },
+  { id: "azure", label: "Microsoft", Icon: MicrosoftGlyph },
+] as const;
 
 export const SignUp = ({ nextUrl = "/" }: SignUpProps) => {
   const router = useRouter();
@@ -18,26 +26,26 @@ export const SignUp = ({ nextUrl = "/" }: SignUpProps) => {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
+  const [oauthPending, setOauthPending] = useState<string | null>(null);
 
-  // See sign-in.tsx's handleGoogleSignIn for the full round-trip
+  // See sign-in.tsx's handleOAuthSignIn for the full round-trip
   // explanation. Sign-up and sign-in use the same OAuth call - Supabase
-  // creates the account on first Google sign-in automatically, there's
-  // no separate "sign up with Google" API.
-  const handleGoogleSignIn = async () => {
+  // creates the account on first sign-in automatically, there's no
+  // separate "sign up with <provider>" API.
+  const handleOAuthSignIn = async (provider: (typeof OAUTH_PROVIDERS)[number]["id"]) => {
     setError(null);
-    setIsGoogleSubmitting(true);
+    setOauthPending(provider);
 
     const supabase = createClient();
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider: "google",
+      provider,
       options: {
         redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextUrl)}`,
       },
     });
 
     if (oauthError) {
-      setIsGoogleSubmitting(false);
+      setOauthPending(null);
       setError(oauthError.message);
     }
   };
@@ -80,15 +88,20 @@ export const SignUp = ({ nextUrl = "/" }: SignUpProps) => {
           Enter your details to get started.
         </p>
       </div>
-      <button
-        className="mb-4 flex h-10 w-full items-center justify-center gap-2 border-[3px] border-foreground bg-background px-4 font-bold text-sm transition-transform hover:-translate-y-0.5 disabled:opacity-50"
-        disabled={isGoogleSubmitting}
-        onClick={handleGoogleSignIn}
-        type="button"
-      >
-        <GoogleGlyph />
-        {isGoogleSubmitting ? "Redirecting…" : "Continue with Google"}
-      </button>
+      <div className="mb-4 flex flex-col gap-2.5">
+        {OAUTH_PROVIDERS.map(({ id, label, Icon }) => (
+          <button
+            className="flex h-10 w-full items-center justify-center gap-2 border-[3px] border-foreground bg-background px-4 font-bold text-sm transition-transform hover:-translate-y-0.5 disabled:opacity-50"
+            disabled={oauthPending !== null}
+            key={id}
+            onClick={() => handleOAuthSignIn(id)}
+            type="button"
+          >
+            <Icon />
+            {oauthPending === id ? "Redirecting…" : `Continue with ${label}`}
+          </button>
+        ))}
+      </div>
       <div className="mb-4 flex items-center gap-3 font-bold text-muted-foreground text-xs">
         <span className="h-0.5 flex-1 bg-foreground" />
         or
@@ -117,12 +130,15 @@ export const SignUp = ({ nextUrl = "/" }: SignUpProps) => {
             autoComplete="new-password"
             className="h-10 border-[3px] border-foreground bg-input px-3 text-sm outline-none focus-visible:shadow-[4px_4px_0_#2B44FF]"
             id="password"
-            minLength={6}
+            minLength={8}
             onChange={(event) => setPassword(event.target.value)}
             required
             type="password"
             value={password}
           />
+          <p className="text-[11px] text-muted-foreground">
+            At least 8 characters.
+          </p>
         </div>
         {error && <p className="font-medium text-destructive text-sm">{error}</p>}
         {message && (

@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { createClient } from "../client";
+import { GitHubGlyph } from "./github-glyph";
 import { GoogleGlyph } from "./google-glyph";
+import { MicrosoftGlyph } from "./microsoft-glyph";
 
 // Deliberately no @repo/design-system import here — that package's own
 // provider (DesignSystemProvider) imports AuthProvider from this package,
@@ -15,13 +17,19 @@ interface SignInProps {
   readonly nextUrl?: string;
 }
 
+const OAUTH_PROVIDERS = [
+  { id: "google", label: "Google", Icon: GoogleGlyph },
+  { id: "github", label: "GitHub", Icon: GitHubGlyph },
+  { id: "azure", label: "Microsoft", Icon: MicrosoftGlyph },
+] as const;
+
 export const SignIn = ({ nextUrl = "/" }: SignInProps) => {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
+  const [oauthPending, setOauthPending] = useState<string | null>(null);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -45,31 +53,33 @@ export const SignIn = ({ nextUrl = "/" }: SignInProps) => {
     router.refresh();
   };
 
-  // Redirects to Google, which sends the browser to Supabase's own
+  // Redirects to the provider, which sends the browser to Supabase's own
   // hosted OAuth callback, which then redirects here to
   // /auth/callback?next=... to finish the session exchange. Errors out
-  // with Supabase's own message if the Google provider isn't enabled in
-  // the Supabase dashboard yet - degrades the same way every other
+  // with Supabase's own message if a provider isn't enabled in the
+  // Supabase dashboard yet - degrades the same way every other
   // not-yet-configured integration in this codebase does, rather than
-  // hiding the button.
-  const handleGoogleSignIn = async () => {
+  // hiding the button. One handler for all three providers (Google was
+  // its own copy-pasted handleGoogleSignIn before GitHub/Microsoft were
+  // added - same round trip, only the provider id differs).
+  const handleOAuthSignIn = async (provider: (typeof OAUTH_PROVIDERS)[number]["id"]) => {
     setError(null);
-    setIsGoogleSubmitting(true);
+    setOauthPending(provider);
 
     const supabase = createClient();
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider: "google",
+      provider,
       options: {
         redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextUrl)}`,
       },
     });
 
     if (oauthError) {
-      setIsGoogleSubmitting(false);
+      setOauthPending(null);
       setError(oauthError.message);
     }
-    // On success the browser navigates away to Google immediately - no
-    // further state update needed here.
+    // On success the browser navigates away immediately - no further
+    // state update needed here.
   };
 
   return (
@@ -80,15 +90,20 @@ export const SignIn = ({ nextUrl = "/" }: SignInProps) => {
           Enter your email and password to continue.
         </p>
       </div>
-      <button
-        className="mb-4 flex h-10 w-full items-center justify-center gap-2 border-[3px] border-foreground bg-background px-4 font-bold text-sm transition-transform hover:-translate-y-0.5 disabled:opacity-50"
-        disabled={isGoogleSubmitting}
-        onClick={handleGoogleSignIn}
-        type="button"
-      >
-        <GoogleGlyph />
-        {isGoogleSubmitting ? "Redirecting…" : "Continue with Google"}
-      </button>
+      <div className="mb-4 flex flex-col gap-2.5">
+        {OAUTH_PROVIDERS.map(({ id, label, Icon }) => (
+          <button
+            className="flex h-10 w-full items-center justify-center gap-2 border-[3px] border-foreground bg-background px-4 font-bold text-sm transition-transform hover:-translate-y-0.5 disabled:opacity-50"
+            disabled={oauthPending !== null}
+            key={id}
+            onClick={() => handleOAuthSignIn(id)}
+            type="button"
+          >
+            <Icon />
+            {oauthPending === id ? "Redirecting…" : `Continue with ${label}`}
+          </button>
+        ))}
+      </div>
       <div className="mb-4 flex items-center gap-3 font-bold text-muted-foreground text-xs">
         <span className="h-0.5 flex-1 bg-foreground" />
         or
