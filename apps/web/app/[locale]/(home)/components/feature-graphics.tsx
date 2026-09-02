@@ -10,7 +10,7 @@ const BAR_HEIGHTS = [34, 52, 27, 64, 44, 92, 58, 38, 22];
 const PICKED_INDEX = 5;
 
 export const ResearchGraphic = () => (
-  <div className="relative h-[288px] overflow-hidden border-[3px] border-foreground bg-card p-[22px] shadow-[8px_8px_0_#111]">
+  <div className="relative min-h-[288px] overflow-hidden border-[3px] border-foreground bg-card p-[22px] shadow-[8px_8px_0_#111]">
     <div
       className="pointer-events-none absolute inset-0 bg-[repeating-linear-gradient(0deg,rgba(17,17,17,0.06)_0_1px,transparent_1px_32px)]"
       aria-hidden="true"
@@ -57,7 +57,7 @@ const GATES = [
 ] as const;
 
 export const QualityGatesGraphic = () => (
-  <div className="flex h-[288px] flex-col gap-3 border-[3px] border-foreground bg-card p-[22px] shadow-[8px_8px_0_#111]">
+  <div className="flex min-h-[288px] flex-col gap-3 border-[3px] border-foreground bg-card p-[22px] shadow-[8px_8px_0_#111]">
     <div className="flex items-center justify-between">
       <span className="font-bold text-[11px] uppercase tracking-[0.14em]">
         Quality gate — draft #2
@@ -111,7 +111,7 @@ const CMS_TARGETS = [
 ] as const;
 
 export const PublishGraphic = () => (
-  <div className="relative grid h-[288px] grid-cols-[128px_1fr] items-center gap-[18px] overflow-hidden border-[3px] border-foreground bg-card p-[22px] shadow-[8px_8px_0_#111]">
+  <div className="relative grid min-h-[288px] grid-cols-[128px_1fr] items-center gap-[18px] overflow-hidden border-[3px] border-foreground bg-card p-[22px] shadow-[8px_8px_0_#111]">
     <div className="flex flex-col gap-1.5 border-[3px] border-foreground bg-brand-yellow p-3.5 shadow-[5px_5px_0_#111]">
       <span className="font-display text-[15px] leading-[1.05]">
         DRAFT
@@ -142,7 +142,7 @@ export const PublishGraphic = () => (
 );
 
 export const KillSwitchGraphic = () => (
-  <div className="grid h-[288px] grid-cols-[132px_1fr] items-center gap-[22px] border-[3px] border-foreground bg-background p-[22px] shadow-[8px_8px_0_#111]">
+  <div className="grid min-h-[288px] grid-cols-[132px_1fr] items-center gap-[22px] border-[3px] border-foreground bg-background p-[22px] shadow-[8px_8px_0_#111]">
     <div className="relative grid place-items-center">
       <div className="absolute size-[118px] animate-[qr-ring_2.6s_ease-out_infinite] border-[3px] border-destructive" />
       <div
