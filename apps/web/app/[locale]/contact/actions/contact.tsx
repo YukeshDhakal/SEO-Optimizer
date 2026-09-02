@@ -15,7 +15,7 @@ export const contact = async (
   error?: string;
 }> => {
   try {
-    if (env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN) {
+    if (env.KV_REST_API_URL && env.KV_REST_API_TOKEN) {
       const rateLimiter = createRateLimiter({
         limiter: slidingWindow(1, "1d"),
       });
