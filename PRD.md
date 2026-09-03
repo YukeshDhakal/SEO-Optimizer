@@ -116,6 +116,7 @@ Each phase is one commit on `master` (chronological, oldest first). This is the 
 | Upstash (rate-limit) | **Not configured** | `packages/rate-limit` unused; Phase 5's daily/weekly post caps are enforced via a direct DB count query instead. |
 | Resend (email) | Not configured | Optional. |
 | BetterStack, PostHog, Sentry, Arcjet, Svix, Liveblocks, BaseHub, Knock, GA | Not configured | All next-forge defaults, left as optional/unset. |
+| n8n MCP internal API (`apps/api/app/internal/*`) | **Configured** (2026-09-03) | `N8N_INTERNAL_SECRET` set on `quillrun-api` production — gates the plain JSON API an n8n MCP Server Trigger workflow's tool nodes call, distinct from `CRON_SECRET` (different trust boundary: fixed reviewed schedules vs. arbitrary proxied MCP tool calls). The n8n MCP Server Trigger workflow itself is still to be built. |
 
 **Env-var gotcha to remember**: this repo's `.env.example` files comment out every unconfigured optional var rather than leaving `KEY=""`, because `@t3-oss/env-nextjs` zod validators (`.url()`, `.startsWith()`) treat empty string as present-but-invalid, not unset — that broke local dev until `f492830` fixed the pattern. Apply the same convention to any new optional var.
 
