@@ -15,6 +15,7 @@
   "dependencies": {
     "@repo/analytics": "*",
     "@repo/auth": "*",
+    "@repo/cms-adapters": "*",
     "@repo/database": "*",
     "@repo/design-system": "*",
     "@repo/google-ads": "*",

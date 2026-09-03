@@ -1,5 +1,10 @@
 import { keys as analytics } from "@repo/analytics/keys";
 import { keys as auth } from "@repo/auth/keys";
+// Phase B: /internal/publish resolves and calls a CMS adapter, and the
+// hosted_blog adapter reads NEXT_PUBLIC_ROOT_DOMAIN to compute a post's public
+// URL. Declared here so this app's env schema covers it too — same per-app
+// declaration pattern apps/app already uses for it.
+import { keys as cmsAdapters } from "@repo/cms-adapters/keys";
 import { keys as database } from "@repo/database/keys";
 import { keys as email } from "@repo/email/keys";
 import { keys as googleAds } from "@repo/google-ads/keys";
@@ -15,6 +20,7 @@ export const env = createEnv({
   extends: [
     auth(),
     analytics(),
+    cmsAdapters(),
     core(),
     database(),
     email(),
@@ -30,6 +36,16 @@ export const env = createEnv({
     // workflow runs — worth gating even though this app has no other
     // unauthenticated-by-design cron route to match convention against.
     CRON_SECRET: z.string().min(1).optional(),
+    // Phase B (MCP connector): checked by the `/internal/*` route handlers,
+    // which n8n's MCP Server Trigger workflow calls as a plain HTTP API on
+    // behalf of an external MCP client. Deliberately a *separate* secret from
+    // CRON_SECRET rather than a reuse of it: different trust boundary. A
+    // CRON_SECRET holder is n8n running our own fixed, reviewed schedules; an
+    // N8N_INTERNAL_SECRET holder is n8n proxying arbitrary tool calls from
+    // whoever holds its MCP bearer token. Rotating one must not silently
+    // widen or narrow the other. Same optional/fail-open-if-unset shape as
+    // CRON_SECRET above.
+    N8N_INTERNAL_SECRET: z.string().min(1).optional(),
     // Phase 5: platform-wide safety valve, off by default. Read directly
     // via `process.env.EMERGENCY_STOP` at the call sites that actually
     // check it (`@repo/workflows`' `checkKillSwitch`, this app's dispatcher
@@ -49,6 +65,7 @@ export const env = createEnv({
   client: {},
   runtimeEnv: {
     CRON_SECRET: process.env.CRON_SECRET,
+    N8N_INTERNAL_SECRET: process.env.N8N_INTERNAL_SECRET,
     EMERGENCY_STOP: process.env.EMERGENCY_STOP,
     SUPABASE_PUBLISHABLE_KEY: process.env.SUPABASE_PUBLISHABLE_KEY,
     SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY,
