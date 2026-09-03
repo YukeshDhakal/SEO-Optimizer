@@ -30,7 +30,13 @@ const adsFetch = async <T>(
       ...(GOOGLE_ADS_LOGIN_CUSTOMER_ID
         ? { "login-customer-id": GOOGLE_ADS_LOGIN_CUSTOMER_ID }
         : {}),
-      "Content-Type": "application/json",
+      // Only set on an actual POST body - customers:listAccessibleCustomers
+      // is a bodyless GET and Google's gRPC-transcoding gateway rejects it
+      // with a bare "[INVALID_ARGUMENT] Request contains an invalid
+      // argument." if Content-Type: application/json is present with no
+      // body at all (confirmed against Google's own docs: the request body
+      // for this endpoint must be completely empty).
+      ...(body ? { "Content-Type": "application/json" } : {}),
     },
     body: body ? JSON.stringify(body) : undefined,
   });
