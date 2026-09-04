@@ -55,8 +55,16 @@ const adsFetch = async <T>(
     // HTTP status if the body isn't the expected shape (e.g. an upstream
     // 5xx with an HTML error page).
     let detail = "";
+    const rawText = await response.text();
+    // Temporary: log the completely unparsed response so a genuinely
+    // unexpected body shape (not the { error: {...} } shape assumed
+    // below) is visible in Vercel's runtime logs instead of silently
+    // falling through to a bare, uninformative message.
+    console.error(
+      `[google-ads] ${path} -> HTTP ${response.status}, raw body: ${rawText}`
+    );
     try {
-      const body = (await response.json()) as {
+      const body = JSON.parse(rawText) as {
         error?: {
           message?: string;
           status?: string;
@@ -81,7 +89,8 @@ const adsFetch = async <T>(
           .join("; ")}`;
       }
     } catch {
-      // Body wasn't JSON — fall through with just the HTTP status.
+      // Body wasn't JSON — fall through with just the HTTP status. The
+      // console.error above still captured it for inspection.
     }
     throw new Error(`Google Ads API error (HTTP ${response.status}).${detail}`);
   }
