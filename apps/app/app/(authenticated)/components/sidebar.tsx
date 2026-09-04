@@ -2,6 +2,7 @@
 
 import { UserMenu } from "@repo/auth/components/user-menu";
 import type { Tables } from "@repo/database";
+import { StatusDot } from "@repo/design-system/components/status-pill";
 import {
   Sidebar,
   SidebarContent,
@@ -15,11 +16,13 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@repo/design-system/components/ui/sidebar";
-import { StatusDot } from "@repo/design-system/components/status-pill";
 import { cn } from "@repo/design-system/lib/utils";
 import {
+  CreditCardIcon,
   GlobeIcon,
+  KeyIcon,
   LayoutGridIcon,
+  ScrollTextIcon,
   ShieldCheckIcon,
   ShieldIcon,
   TagIcon,
@@ -29,18 +32,18 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
 export interface SidebarSite {
-  readonly id: string;
-  readonly display_name: string;
-  readonly status: string;
-  readonly paused: boolean;
   readonly consecutive_publish_failures: number;
+  readonly display_name: string;
+  readonly id: string;
+  readonly paused: boolean;
+  readonly status: string;
 }
 
 interface GlobalSidebarProperties {
   readonly children: ReactNode;
   readonly organization: Tables<"organizations">;
-  readonly sites: SidebarSite[];
   readonly requireApproval: boolean;
+  readonly sites: SidebarSite[];
 }
 
 const siteDotStatus = (site: SidebarSite) => {
@@ -59,12 +62,12 @@ const siteDotStatus = (site: SidebarSite) => {
 // Peach sidebar shell (--sidebar/-foreground/-accent/-border tokens in
 // packages/design-system/styles/globals.css now carry the neobrutalism
 // handoff's own palette). Nav matches the handoff's Workspace group
-// (Runs/Sites/Topics/Quality gates) plus Guardrails as a second item -
-// the handoff's own top nav bar (which is where its "Guardrails" link
-// lives) doesn't exist in this app's real architecture, so it stays here
-// in the sidebar instead. Audit log and Billing move inside the Guardrails
-// page itself (no nav slot in the handoff for either); Webhooks (a
-// next-forge Svix demo, unconfigured per PRD.md §5) stays dropped.
+// (Runs/Sites/Topics/Quality gates) plus Guardrails, Billing, Audit log,
+// and API keys as first-class items - the handoff's own top nav bar
+// (which is where its "Guardrails" link lives) doesn't exist in this
+// app's real architecture, so all four live here in the sidebar instead
+// of nested under a Guardrails-only sub-tab-row. Webhooks (a next-forge
+// Svix demo, unconfigured per PRD.md §5) stays dropped.
 export const GlobalSidebar = ({
   children,
   organization,
@@ -96,10 +99,35 @@ export const GlobalSidebar = ({
       icon: ShieldIcon,
       badge: requireApproval ? null : "off",
     },
+    {
+      key: "billing",
+      label: "Billing",
+      href: "/guardrails/billing",
+      icon: CreditCardIcon,
+    },
+    {
+      key: "audit",
+      label: "Audit log",
+      href: "/guardrails/audit",
+      icon: ScrollTextIcon,
+    },
+    {
+      key: "api-keys",
+      label: "API keys",
+      href: "/guardrails/api-keys",
+      icon: KeyIcon,
+    },
   ];
 
+  // "/guardrails" is a prefix of its three siblings below, so it needs an
+  // exact match now that they're separate Workspace items rather than
+  // sub-pages nested under it - without this, opening Billing would light
+  // up both "Guardrails" and "Billing" at once.
+  const EXACT_MATCH_ROUTES = new Set(["/", "/guardrails"]);
   const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+    EXACT_MATCH_ROUTES.has(href)
+      ? pathname === href
+      : pathname.startsWith(href);
   const onSitePage = pathname.startsWith("/sites/") && pathname !== "/sites";
 
   return (
@@ -184,7 +212,7 @@ export const GlobalSidebar = ({
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter className="gap-2 border-sidebar-border border-t-[3px] px-3 py-3">
-          <div className="min-w-0 text-sidebar-foreground/70 text-xs [&_button]:text-sidebar-foreground/50 [&_button:hover]:text-sidebar-foreground [&_span]:text-sidebar-foreground/85">
+          <div className="min-w-0 text-sidebar-foreground/70 text-xs [&_button:hover]:text-sidebar-foreground [&_button]:text-sidebar-foreground/50 [&_span]:text-sidebar-foreground/85">
             <UserMenu />
           </div>
         </SidebarFooter>

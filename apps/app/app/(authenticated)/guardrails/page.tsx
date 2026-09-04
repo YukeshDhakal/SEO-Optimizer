@@ -7,7 +7,6 @@ import { redirect } from "next/navigation";
 import { updateTenantSettings } from "../../actions/tenant-settings/mutate";
 import { getCurrentOrganization } from "../../lib/organization";
 import { EmergencyStopPanel } from "./emergency-stop-panel";
-import { GuardrailsTabs } from "./guardrails-tabs";
 
 export const metadata: Metadata = { title: "Settings" };
 
@@ -58,8 +57,6 @@ const SettingsPage = async () => {
 
   return (
     <div className="flex flex-1 flex-col gap-5 p-6">
-      <GuardrailsTabs />
-
       <div>
         <h1 className="font-display text-3xl tracking-tight">GUARDRAILS</h1>
         <p className="mt-1 max-w-xl text-muted-foreground text-sm">

@@ -5,7 +5,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentOrganization } from "../../../lib/organization";
-import { GuardrailsTabs } from "../guardrails-tabs";
 
 export const metadata: Metadata = { title: "Audit log" };
 
@@ -91,8 +90,6 @@ const AuditLogPage = async ({ searchParams }: AuditLogPageProps) => {
 
   return (
     <div className="flex flex-1 flex-col gap-5 p-6">
-      <GuardrailsTabs />
-
       <div>
         <h1 className="font-display text-3xl tracking-tight">AUDIT LOG</h1>
         <p className="mt-1 text-muted-foreground text-sm">

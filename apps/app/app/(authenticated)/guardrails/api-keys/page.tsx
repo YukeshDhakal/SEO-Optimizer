@@ -16,7 +16,6 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { updateApiKeyLimit } from "../../../actions/api-keys/mutate";
 import { getCurrentOrganization } from "../../../lib/organization";
-import { GuardrailsTabs } from "../guardrails-tabs";
 import { CreateApiKeyDialog } from "./create-api-key-dialog";
 import { RevokeKeyButton } from "./revoke-key-button";
 
@@ -117,8 +116,6 @@ const ApiKeysPage = async () => {
 
   return (
     <div className="flex flex-1 flex-col gap-5 p-6">
-      <GuardrailsTabs />
-
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl tracking-tight">API KEYS</h1>

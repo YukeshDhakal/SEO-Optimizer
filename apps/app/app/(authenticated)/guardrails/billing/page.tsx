@@ -9,7 +9,6 @@ import { currentPeriodBounds } from "@repo/workflows";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentOrganization } from "../../../lib/organization";
-import { GuardrailsTabs } from "../guardrails-tabs";
 import { ChoosePlanForm, ManageBillingForm } from "./billing-actions";
 
 export const metadata: Metadata = { title: "Billing" };
@@ -47,8 +46,6 @@ const BillingPage = async () => {
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4">
-      <GuardrailsTabs />
-
       <div>
         <h1 className="font-display text-3xl tracking-tight">BILLING</h1>
         <p className="text-muted-foreground text-sm">{organization.name}</p>
