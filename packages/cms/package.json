@@ -11,7 +11,7 @@
   "devDependencies": {
     "@repo/typescript-config": "*",
     "@types/node": "25.3.5",
-    "@types/react": "19.2.14",
+    "@types/react": "19.2.18",
     "@types/react-dom": "19.2.3",
     "next": "16.1.6"
   }
