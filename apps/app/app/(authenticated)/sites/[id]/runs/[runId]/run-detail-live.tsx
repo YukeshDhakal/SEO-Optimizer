@@ -7,6 +7,7 @@ import { Button } from "@repo/design-system/components/ui/button";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ApprovalActions } from "./approval-actions";
+import { runLabel, runPillStatus } from "../../../../components/runs-table";
 import { SiteTabs } from "../../site-tabs";
 
 type PipelineRun = Tables<"pipeline_runs">;
@@ -19,44 +20,6 @@ interface RunDetailLiveProperties {
   readonly siteConnectionId: string;
   readonly canManage: boolean;
 }
-
-const runPillStatus = (run: {
-  status: string;
-  current_step: string | null;
-}) => {
-  if (run.status === "running" && run.current_step === "approval_gate") {
-    return "await" as const;
-  }
-  if (run.status === "running") {
-    return "running" as const;
-  }
-  if (run.status === "succeeded") {
-    return "ok" as const;
-  }
-  if (run.status === "blocked" || run.status === "rejected") {
-    return "blocked" as const;
-  }
-  return "failed" as const;
-};
-
-const runLabel = (run: { status: string; current_step: string | null }) => {
-  if (run.status === "running" && run.current_step === "approval_gate") {
-    return "Awaiting approval";
-  }
-  if (run.status === "running") {
-    return "Running";
-  }
-  if (run.status === "succeeded") {
-    return "Published";
-  }
-  if (run.status === "blocked") {
-    return "Blocked by policy";
-  }
-  if (run.status === "rejected") {
-    return "Rejected";
-  }
-  return "Failed";
-};
 
 const stepPillStatus = (status: string) => {
   if (status === "succeeded") {

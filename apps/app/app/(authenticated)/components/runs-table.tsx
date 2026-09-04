@@ -13,7 +13,10 @@ export interface RunRow {
   readonly contentType: "blog" | "faq";
 }
 
-export const runPillStatus = (run: { status: string; current_step: string | null }) => {
+export const runPillStatus = (run: {
+  status: string;
+  current_step: string | null;
+}) => {
   if (run.status === "running" && run.current_step === "approval_gate") {
     return "await" as const;
   }
@@ -29,7 +32,10 @@ export const runPillStatus = (run: { status: string; current_step: string | null
   return "failed" as const;
 };
 
-export const runLabel = (run: { status: string; current_step: string | null }) => {
+export const runLabel = (run: {
+  status: string;
+  current_step: string | null;
+}) => {
   if (run.status === "running" && run.current_step === "approval_gate") {
     return "Awaiting approval";
   }
@@ -37,7 +43,13 @@ export const runLabel = (run: { status: string; current_step: string | null }) =
     return "Running";
   }
   if (run.status === "succeeded") {
-    return "Published";
+    // A succeeded run only ever creates a `posts` row with status:'draft'
+    // (see finalizeRunSucceeded) - actually going live on the tenant's CMS
+    // is a separate, explicit "Publish now" action (packages/workflows/
+    // db-steps.ts's own comment on this handoff point). Labeling this
+    // "Published" was flatly wrong - found by a live test where a
+    // succeeded, still-unpublished run showed a green "Published" pill.
+    return "Draft ready";
   }
   if (run.status === "blocked") {
     return "Blocked by policy";
@@ -52,7 +64,9 @@ export const topicOf = (input: unknown): string =>
   (input as { topicHint?: string } | null)?.topicHint ?? "Untitled run";
 
 export const contentTypeOf = (input: unknown): "blog" | "faq" =>
-  (input as { contentType?: string } | null)?.contentType === "faq" ? "faq" : "blog";
+  (input as { contentType?: string } | null)?.contentType === "faq"
+    ? "faq"
+    : "blog";
 
 interface RunsTableProperties {
   readonly rows: RunRow[];
@@ -63,9 +77,17 @@ interface RunsTableProperties {
 // Shared by the global Runs page (`/`, cross-site) and each site's own Runs
 // tab (`/sites/[id]/runs`, filtered) — the mock's Runs screen is a single
 // flat table with a Site column, so this is the one place that shape lives.
-export const RunsTable = ({ rows, showSiteColumn, emptyMessage }: RunsTableProperties) => {
+export const RunsTable = ({
+  rows,
+  showSiteColumn,
+  emptyMessage,
+}: RunsTableProperties) => {
   if (rows.length === 0) {
-    return <p className="font-medium text-muted-foreground text-sm">{emptyMessage}</p>;
+    return (
+      <p className="font-medium text-muted-foreground text-sm">
+        {emptyMessage}
+      </p>
+    );
   }
 
   return (
@@ -117,9 +139,15 @@ export const RunsTable = ({ rows, showSiteColumn, emptyMessage }: RunsTablePrope
               </td>
               <td className="px-4 py-3.5">
                 <StatusPill
-                  status={runPillStatus({ status: run.status, current_step: run.currentStep })}
+                  status={runPillStatus({
+                    status: run.status,
+                    current_step: run.currentStep,
+                  })}
                 >
-                  {runLabel({ status: run.status, current_step: run.currentStep })}
+                  {runLabel({
+                    status: run.status,
+                    current_step: run.currentStep,
+                  })}
                 </StatusPill>
               </td>
             </tr>

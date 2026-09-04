@@ -16,6 +16,7 @@ import { DeleteSiteButton } from "./delete-site-button";
 import { EditSiteForm } from "./edit-site-form";
 import { OAuthStatusBanner } from "./oauth-status-banner";
 import { SiteTabs } from "./site-tabs";
+import { runPillStatus } from "../../components/runs-table";
 
 export const metadata: Metadata = {
   title: "Site details",
@@ -28,22 +29,10 @@ interface SiteDetailPageProperties {
 const startOfWindow = (days: number) =>
   new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
-const runPillStatus = (run: { status: string; current_step: string | null }) => {
-  if (run.status === "running" && run.current_step === "approval_gate") {
-    return "await" as const;
-  }
-  if (run.status === "running") {
-    return "running" as const;
-  }
-  if (run.status === "succeeded") {
-    return "ok" as const;
-  }
-  if (run.status === "blocked" || run.status === "rejected") {
-    return "blocked" as const;
-  }
-  return "failed" as const;
-};
-
+// Only the "running" case differs from runs-table.tsx's shared runLabel
+// (shows the current step inline, useful in this page's compact recent-runs
+// list) - runPillStatus above is imported instead of duplicated, since it
+// has no such variation.
 const runLabel = (run: { status: string; current_step: string | null }) => {
   if (run.status === "running" && run.current_step === "approval_gate") {
     return "Awaiting approval";
@@ -52,7 +41,10 @@ const runLabel = (run: { status: string; current_step: string | null }) => {
     return `Running — ${run.current_step ?? "starting"}`;
   }
   if (run.status === "succeeded") {
-    return "Published";
+    // A succeeded run only ever creates a draft `posts` row - actually
+    // publishing is a separate "Publish now" action (see runs-table.tsx's
+    // own comment on this same fix).
+    return "Draft ready";
   }
   if (run.status === "blocked") {
     return "Blocked by policy";
@@ -223,9 +215,9 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
         <div className="flex items-center justify-between gap-4 border-[3px] border-foreground bg-status-error-bg px-4 py-3 font-medium text-sm text-status-error-fg">
           <p>
             <strong>Automatically paused</strong> after{" "}
-            {site.consecutive_publish_failures} consecutive publish
-            failures. Fix the underlying issue (check credentials/site
-            reachability), then resume.
+            {site.consecutive_publish_failures} consecutive publish failures.
+            Fix the underlying issue (check credentials/site reachability), then
+            resume.
           </p>
         </div>
       )}
@@ -238,7 +230,10 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {siteStats.map((s) => (
-          <div className="border-[3px] border-foreground bg-card p-3.5 shadow-[5px_5px_0_#111]" key={s.label}>
+          <div
+            className="border-[3px] border-foreground bg-card p-3.5 shadow-[5px_5px_0_#111]"
+            key={s.label}
+          >
             <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
               {s.label}
             </div>
@@ -252,7 +247,9 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.35fr_1fr]">
         <div className="border-[3px] border-foreground bg-card">
           <div className="flex items-center justify-between border-b px-4 py-3">
-            <span className="font-display text-base tracking-tight">RECENT RUNS</span>
+            <span className="font-display text-base tracking-tight">
+              RECENT RUNS
+            </span>
             <Link
               className="font-medium text-primary text-xs hover:underline"
               href={`/sites/${site.id}/runs`}
@@ -356,10 +353,11 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
           </div>
 
           <div className="border-[3px] border-foreground bg-status-error-bg p-4">
-            <h2 className="mb-1 font-display text-base tracking-tight">DANGER ZONE</h2>
+            <h2 className="mb-1 font-display text-base tracking-tight">
+              DANGER ZONE
+            </h2>
             <p className="mb-3 text-muted-foreground text-xs">
-              Deleting a site removes it and its history. This cannot be
-              undone.
+              Deleting a site removes it and its history. This cannot be undone.
             </p>
             <DeleteSiteButton id={site.id} />
           </div>
