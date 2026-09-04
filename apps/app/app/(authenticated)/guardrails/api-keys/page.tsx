@@ -131,8 +131,20 @@ const ApiKeysPage = async () => {
         </div>
       </div>
 
+      {!canManage && (
+        <div className="flex items-center gap-3 border-[3px] border-foreground bg-status-warning-bg px-4 py-3 text-status-warning-fg shadow-[5px_5px_0_var(--border)]">
+          <span className="shrink-0 border-2 border-foreground bg-card px-2 py-0.5 font-bold text-[10px] text-foreground uppercase tracking-wider">
+            Read only
+          </span>
+          <span className="font-medium text-sm">
+            You&apos;re a member of {organization.name}. Ask an admin or owner
+            to create or revoke keys.
+          </span>
+        </div>
+      )}
+
       {rows.length > 0 ? (
-        <div className="overflow-hidden border-[3px] border-foreground">
+        <div className="overflow-hidden border-[3px] border-foreground shadow-[8px_8px_0_var(--border)]">
           <Table>
             <TableHeader>
               <TableRow>
@@ -164,9 +176,9 @@ const ApiKeysPage = async () => {
                     </TableCell>
                     <TableCell>
                       {key.revoked_at ? (
-                        <Badge variant="outline">Revoked</Badge>
+                        <Badge variant="muted">Revoked</Badge>
                       ) : (
-                        <Badge>Active</Badge>
+                        <Badge variant="success">Active</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-right">
@@ -195,7 +207,11 @@ const ApiKeysPage = async () => {
                               Set
                             </Button>
                           </form>
-                          <RevokeKeyButton id={key.id} name={key.name} />
+                          <RevokeKeyButton
+                            id={key.id}
+                            name={key.name}
+                            prefix={key.key_prefix}
+                          />
                         </div>
                       )}
                     </TableCell>
@@ -206,13 +222,22 @@ const ApiKeysPage = async () => {
           </Table>
         </div>
       ) : (
-        <p className="text-muted-foreground text-sm">
-          No API keys yet. Create one to connect an AI client to this
-          organization.
-        </p>
+        <div className="flex flex-col items-center gap-4 border-[3px] border-foreground bg-card px-10 py-14 text-center shadow-[8px_8px_0_var(--border)]">
+          <div className="flex gap-2">
+            <span className="h-12 w-7 border-[3px] border-foreground bg-secondary" />
+            <span className="h-12 w-7 border-[3px] border-foreground bg-accent" />
+            <span className="h-12 w-7 border-[3px] border-foreground bg-status-warning-bg" />
+          </div>
+          <h2 className="font-display text-2xl tracking-tight">NO KEYS YET</h2>
+          <p className="max-w-md text-muted-foreground text-sm">
+            Create a key to let an AI client talk to Quillrun&apos;s MCP server
+            on behalf of this org. You&apos;ll see the key once, at creation.
+          </p>
+          {canManage && <CreateApiKeyDialog organizationId={organization.id} />}
+        </div>
       )}
 
-      {canManage ? (
+      {canManage && (
         <div className="max-w-xl border-[3px] border-foreground bg-muted p-4">
           <p className="font-bold text-sm">Connecting a client</p>
           <p className="mt-1 text-muted-foreground text-xs">
@@ -226,10 +251,6 @@ const ApiKeysPage = async () => {
             first of the next month.
           </p>
         </div>
-      ) : (
-        <p className="text-muted-foreground text-sm">
-          Only owners and admins can create or revoke API keys.
-        </p>
       )}
 
       <div>

@@ -21,6 +21,13 @@ import {
 
 const initialState: ApiKeyFormState = {};
 
+// Real production endpoint, not a placeholder — this block is meant to be
+// copy-pasted straight into a client's MCP config, bearer token swapped in.
+const CONFIG_SNIPPET = `"quillrun": {
+  "url": "https://quillrun-api.vercel.app/mcp",
+  "headers": { "Authorization": "Bearer <your-key>" }
+}`;
+
 interface CreateApiKeyDialogProperties {
   readonly organizationId: string;
 }
@@ -92,31 +99,53 @@ export const CreateApiKeyDialog = ({
             <DialogHeader>
               <DialogTitle>Copy your key now</DialogTitle>
               <DialogDescription>
-                This is the only time this key will ever be shown. Quillrun
-                stores only a hash of it — if you lose it, revoke this key and
-                create another.
+                Shown once. Quillrun cannot display it again after this dialog
+                closes.
               </DialogDescription>
             </DialogHeader>
-            <div className="flex flex-col gap-3">
-              <div className="flex gap-2">
-                <Input
-                  className="font-mono text-xs"
-                  onFocus={(event) => event.currentTarget.select()}
-                  readOnly
-                  value={revealed}
-                />
-                <Button onClick={copy} type="button" variant="outline">
+            <div className="flex flex-col gap-4">
+              <div className="flex items-start gap-3 border-[3px] border-foreground bg-status-warning-bg px-3 py-2.5 text-status-warning-fg">
+                <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center border-2 border-foreground bg-destructive font-display text-destructive-foreground text-xs">
+                  !
+                </span>
+                <span className="font-medium text-sm">
+                  This is the only time the full key is shown. Quillrun stores a
+                  hash, not the key — once you close this dialog it can never be
+                  retrieved. Copy it into your client now.
+                </span>
+              </div>
+              <div className="flex gap-0 border-[3px] border-foreground bg-foreground">
+                <code className="flex-1 overflow-x-auto whitespace-nowrap px-3 py-3 font-mono text-status-success-bg text-xs">
+                  {revealed}
+                </code>
+                <Button
+                  className="rounded-none border-0 border-foreground border-l-[3px]"
+                  onClick={copy}
+                  type="button"
+                  variant="accent"
+                >
                   Copy
                 </Button>
               </div>
-              <label className="flex items-start gap-2 text-sm">
+              <div className="flex flex-col gap-1.5 border-[3px] border-foreground bg-card px-3 py-2.5">
+                <span className="font-bold text-[10px] text-muted-foreground uppercase tracking-wider">
+                  Add to your MCP client config
+                </span>
+                <code className="whitespace-pre font-mono text-muted-foreground text-xs leading-relaxed">
+                  {CONFIG_SNIPPET}
+                </code>
+              </div>
+              <label className="flex items-start gap-3 border-[3px] border-foreground bg-card px-3 py-2.5 text-sm">
                 <input
                   checked={acknowledged}
-                  className="mt-0.5 size-4 accent-primary"
+                  className="mt-0.5 size-5 shrink-0 accent-primary"
                   onChange={(event) => setAcknowledged(event.target.checked)}
                   type="checkbox"
                 />
-                <span>I&apos;ve saved this key somewhere safe.</span>
+                <span className="font-bold">
+                  I&apos;ve saved this key somewhere safe. I understand it
+                  can&apos;t be shown again.
+                </span>
               </label>
             </div>
             <DialogFooter>
