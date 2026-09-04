@@ -10,8 +10,8 @@ assignees: ''
 **Describe the bug**
 A clear and concise description of what the bug is.
 
-**next-forge version**
-I am using version ...
+**Where**
+Which app: `app.quillrun.dev` or `quillrun.dev`? Which page/URL?
 
 **To Reproduce**
 Steps to reproduce the behavior:

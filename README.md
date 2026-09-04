@@ -1,140 +1,88 @@
-# ▲ / next-forge
+# Quillrun
 
-**Production-grade Turborepo template for Next.js apps.**
+Quillrun is a multi-tenant SaaS product: an autonomous SEO/GEO content agent that researches, writes, and auto-publishes blog content to a customer's own CMS (WordPress, Webflow, Shopify, or a hosted blog we provide), with almost no manual work.
 
-<div>
-  <img src="https://img.shields.io/npm/dy/next-forge" alt="" />
-  <img src="https://img.shields.io/npm/v/next-forge" alt="" />
-  <img src="https://img.shields.io/github/license/vercel/next-forge" alt="" />
-</div>
+**GEO** (Generative Engine Optimization) means optimizing content to be cited/surfaced by AI answer engines (ChatGPT, Perplexity, AI Overviews), not just ranked by classic search — it sits alongside traditional SEO as a quality gate in the generation pipeline.
 
-## Overview
+- Marketing site: [quillrun.dev](https://quillrun.dev)
+- Dashboard: [app.quillrun.dev](https://app.quillrun.dev)
 
-[next-forge](https://github.com/vercel/next-forge) is a production-grade [Turborepo](https://turborepo.com) template for [Next.js](https://nextjs.org/) apps. It's designed to be a comprehensive starting point for building SaaS applications, providing a solid, opinionated foundation with minimal configuration required.
+## Who it's for
 
-Built on a decade of experience building web applications, next-forge balances speed and quality to help you ship thoroughly-built products faster.
+Small business owners and marketing-ops people at agencies, managing content for one or several client sites. They're trusting an AI to write and publish under their brand with no review step by default. The product's central design problem is making that trust legible — what the agent is about to do, what it just did, why a piece of content passed or failed quality gates, and a clear, always-visible way to stop it.
 
-### Philosophy
+## Architecture
 
-next-forge is built around five core principles:
-
-- **Fast** — Quick to build, run, deploy, and iterate on
-- **Cheap** — Free to start with services that scale with you
-- **Opinionated** — Integrated tooling designed to work together
-- **Modern** — Latest stable features with healthy community support
-- **Safe** — End-to-end type safety and robust security posture
-
-## Demo
-
-Experience next-forge in action:
-
-- [Web](https://demo.next-forge.com) — Marketing website
-- [App](https://app.demo.next-forge.com) — Main application
-- [Storybook](https://storybook.demo.next-forge.com) — Component library
-- [API](https://api.demo.next-forge.com/health) — API health check
-
-## Features
-
-next-forge comes with batteries included:
-
-### Apps
-
-- **Web** — Marketing site built with Tailwind CSS and TWBlocks
-- **App** — Main application with authentication and database integration
-- **API** — RESTful API with health checks and monitoring
-- **Docs** — Documentation site powered by Mintlify
-- **Email** — Email templates with React Email
-- **Storybook** — Component development environment
-
-### Packages
-
-- **Authentication** — Powered by [Clerk](https://clerk.com)
-- **Database** — Type-safe ORM with migrations
-- **Design System** — Comprehensive component library with dark mode
-- **Payments** — Subscription management via [Stripe](https://stripe.com)
-- **Email** — Transactional emails via [Resend](https://resend.com)
-- **Analytics** — Web ([Google Analytics](https://developers.google.com/analytics)) and product ([Posthog](https://posthog.com))
-- **Observability** — Error tracking ([Sentry](https://sentry.io)), logging, and uptime monitoring ([BetterStack](https://betterstack.com))
-- **Security** — Application security ([Arcjet](https://arcjet.com)), rate limiting, and secure headers
-- **CMS** — Type-safe content management for blogs and documentation
-- **SEO** — Metadata management, sitemaps, and JSON-LD
-- **AI** — AI integration utilities
-- **Webhooks** — Inbound and outbound webhook handling
-- **Collaboration** — Real-time features with avatars and live cursors
-- **Feature Flags** — Feature flag management
-- **Cron** — Scheduled job management
-- **Storage** — File upload and management
-- **Internationalization** — Multi-language support
-- **Notifications** — In-app notification system
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 20+
-- [Bun](https://bun.sh) (or npm/yarn/pnpm)
-- [Stripe CLI](https://docs.stripe.com/stripe-cli) for local webhook testing
-
-### Installation
-
-Create a new next-forge project:
-
-```sh
-npx next-forge@latest init
-```
-
-### Setup
-
-1. Configure your environment variables
-2. Set up required service accounts (Clerk, Stripe, Resend, etc.)
-3. Run the development server
-
-For detailed setup instructions, read the [documentation](https://www.next-forge.com/docs).
-
-## Structure
-
-next-forge uses a monorepo structure managed by Turborepo:
+A Turborepo monorepo (npm workspaces):
 
 ```
-next-forge/
-├── apps/           # Deployable applications
-│   ├── web/        # Marketing website (port 3001)
-│   ├── app/        # Main application (port 3000)
-│   ├── api/        # API server
-│   ├── docs/       # Documentation
-│   ├── email/      # Email templates
-│   └── storybook/  # Component library
-└── packages/       # Shared packages
-    ├── design-system/
-    ├── database/
-    ├── auth/
-    └── ...
+apps/
+  app/    main tenant dashboard — sign-in, onboarding, sites, generate, runs, posts, schedule, guardrails, billing
+  web/    marketing site + public tenant-blog rewrite (org-slug.quillrun.dev/blog/slug)
+  api/    cron dispatcher, Stripe/webhook receivers, JWT verification
+
+packages/
+  ai-engine/         generation pipeline: topic_selection → research → outline → draft →
+                      geo_seo_optimize → policy_check, on Vercel AI SDK + Anthropic
+  workflows/          Workflow DevKit orchestration wrapping ai-engine in durable "use step" functions
+  cms-adapters/       CmsAdapter interface + registry: hosted-blog, WordPress, Webflow, Shopify
+  search-console/     Google Search Console OAuth2 + Search Analytics client
+  google-ads/         Google Ads Keyword Planner OAuth2 + volume lookups
+  security/           shared OAuth state-signing helper, security headers
+  database/           Supabase client (service-role) + generated types + SQL migrations
+  auth/               @supabase/ssr wrapper (browser/server clients, useAuth hook)
+  design-system/      shared UI components (shadcn-based), Quillrun brand tokens
+  rate-limit/         Upstash-backed rate limiting
+  payments/           Stripe billing
+  analytics/          GA4 + Google Ads conversion tracking
+  cms/                content model for legal pages
+  ...and observability, feature-flags, notifications, storage, collaboration,
+     internationalization, next-config, typescript-config
 ```
 
-Each app is self-contained and independently deployable. Packages are shared across apps for consistency and maintainability.
+## Stack
 
-## Documentation
+- **Framework**: Next.js (App Router), Turborepo, npm workspaces
+- **Database & Auth**: Supabase (Postgres + Supabase Auth)
+- **AI**: Vercel AI SDK + Anthropic, orchestrated via Workflow DevKit
+- **Payments**: Stripe
+- **Rate limiting**: Upstash Redis (via Vercel Marketplace)
+- **Deployment**: Vercel — three linked projects (`quillrun-app`, `quillrun-web`, `quillrun-api`), all tracking `master`
 
-Full documentation is available at [next-forge.com/docs](https://www.next-forge.com/docs), including:
+## Getting started
 
-- Detailed setup guides
-- Package documentation
-- Migration guides for swapping providers
-- Deployment instructions
-- Examples and recipes
+```bash
+npm install
+```
 
-## Contributing
+Each app needs its own environment variables — see `.env.example` in `apps/app`, `apps/web`, and `apps/api`, plus `packages/database`, `packages/cms`, and `packages/internationalization`. Most variables are optional by design (the app degrades gracefully when an integration isn't configured); only `NEXT_PUBLIC_APP_URL`/`NEXT_PUBLIC_WEB_URL` and the Supabase public config are required to build.
 
-We welcome contributions! See the [contributing guide](https://github.com/vercel/next-forge/blob/main/.github/CONTRIBUTING.md) for details.
+```bash
+npm run dev      # run all apps in dev mode
+npm run build    # build all apps
+npm run test     # run all test suites
+npm run check    # lint (ultracite/biome)
+npm run fix      # lint --fix
+```
 
-## Contributors
+Scoped to a single app or package:
 
-<a href="https://github.com/vercel/next-forge/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=vercel/next-forge" />
-</a>
+```bash
+npm run dev --workspace=apps/app
+npm run test --workspace=@repo/google-ads
+```
 
-Made with [contrib.rocks](https://contrib.rocks).
+## Deployment
 
-## License
+Each app deploys independently to its own Vercel project, all tracking the `master` branch:
 
-MIT
+| App | Vercel project | Domain |
+|---|---|---|
+| `apps/app` | `quillrun-app` | app.quillrun.dev |
+| `apps/web` | `quillrun-web` | quillrun.dev |
+| `apps/api` | `quillrun-api` | cron/webhooks only, no public domain |
+
+```bash
+vercel link --yes --project <project-name>   # from repo root
+vercel deploy --prod --yes
+```
