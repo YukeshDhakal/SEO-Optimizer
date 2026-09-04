@@ -12,15 +12,22 @@ export interface GeneratePostState {
 
 // Phase 4: the manual "Generate post" trigger now runs the durable
 // Workflow DevKit pipeline (`@repo/workflows`) instead of Phase 3's
-// synchronous `runContentPipeline` call. `start()` returns immediately —
-// this action still awaits `run.returnValue` so the existing
-// redirect-to-the-finished-run UX is unchanged, but the run itself is now
-// crash-resumable and step-cached under the hood, and the exact same
-// workflow function is what the Phase 4 cron dispatcher calls for
-// scheduled runs. All authorization (org membership/role, site ownership)
-// happens here, via the request-scoped RLS client, *before* `start()` is
-// called — the workflow's own steps run detached from this session and use
-// the service-role client, trusting whatever input this action gives them.
+// synchronous `runContentPipeline` call. All authorization (org
+// membership/role, site ownership) happens here, via the request-scoped
+// RLS client, *before* `start()` is called — the workflow's own steps run
+// detached from this session and use the service-role client, trusting
+// whatever input this action gives them.
+//
+// Phase 13: this action generates the run's id itself (crypto.randomUUID())
+// and redirects the moment `start()` resolves, WITHOUT awaiting
+// `run.returnValue` — `start()` only registers the durable run and returns;
+// awaiting `returnValue` is what used to block for the whole multi-minute
+// pipeline (see node_modules/@workflow/core's own Run class: `returnValue`
+// is documented as "Polls ... until it is completed"). The cron dispatcher
+// (apps/api) has done exactly this fire-and-forget pattern successfully in
+// production since Phase 4; this just extends it to the manual path so the
+// run-detail page's own Realtime subscription can show real live progress
+// instead of the user staring at a static button for minutes.
 export const generatePost = async (
   _prevState: GeneratePostState,
   formData: FormData
@@ -60,9 +67,9 @@ export const generatePost = async (
     return { error: "Site not found." };
   }
 
-  let runId: string;
+  const runId = crypto.randomUUID();
   try {
-    const run = await start(contentPipelineWorkflow, [
+    await start(contentPipelineWorkflow, [
       {
         organizationId: organization.id,
         siteConnectionId,
@@ -70,16 +77,16 @@ export const generatePost = async (
         topicHint,
         triggerType: "manual",
         contentType,
+        runId,
       },
     ]);
-    const result = await run.returnValue;
-    runId = result.runId;
   } catch {
-    // The workflow's own steps record a terminal `pipeline_runs` status
-    // (failed/blocked) for every handled failure mode before returning —
-    // this catch only fires for something unexpected enough that no run
-    // row exists to redirect to at all (e.g. `start()` itself couldn't
-    // reach the workflow runtime).
+    // Genuinely unexpected: `start()` itself couldn't reach the workflow
+    // runtime, before the pipeline's own steps ever ran. Every handled
+    // failure mode inside the pipeline (blocked/failed/rejected) is
+    // recorded onto the pipeline_runs row this action already generated
+    // an id for above, so this catch is specifically "the run never even
+    // registered," not "the run failed."
     return { error: "Couldn't start the pipeline run. Please try again." };
   }
 

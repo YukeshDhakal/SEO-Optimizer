@@ -1,0 +1,13 @@
+-- Phase 13: live progress on the run-detail page. Enables Supabase Realtime
+-- change broadcast on pipeline_runs/pipeline_run_steps so a browser client
+-- can subscribe to postgres_changes for a specific run instead of the page
+-- being a static server-rendered snapshot (the PRD's own long-flagged
+-- "Live-streaming Generate/Run views" gap).
+--
+-- Safe from an authorization standpoint: postgres_changes respects each
+-- table's existing RLS for the authenticated connection, and both tables
+-- already have correct member-scoped SELECT policies (is_org_member /
+-- is_org_member_for_pipeline_run) -- this doesn't expose anything a normal
+-- `select` wouldn't already, it just lets already-authorized clients be
+-- pushed changes instead of having to poll.
+alter publication supabase_realtime add table pipeline_runs, pipeline_run_steps;

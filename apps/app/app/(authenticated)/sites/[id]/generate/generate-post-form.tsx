@@ -20,20 +20,24 @@ const CONTENT_TYPES = [
   {
     id: "blog" as const,
     label: "Blog post",
-    detail: "Standard article — direct-answer opener, subtopic sections, FAQ block",
+    detail:
+      "Standard article — direct-answer opener, subtopic sections, FAQ block",
   },
   {
     id: "faq" as const,
     label: "FAQ",
-    detail: "FAQ-first page — short context, then a full set of real-demand Q&As",
+    detail:
+      "FAQ-first page — short context, then a full set of real-demand Q&As",
   },
 ];
 
 // Manually-triggered. As of Phase 4 this starts a durable Workflow DevKit
 // run (crash-resumable, step-cached) rather than Phase 3's plain synchronous
-// call, but this form still awaits the full result before redirecting —
-// several model calls plus a possible retry loop, so submitting can take a
-// while either way.
+// call. As of Phase 13, `generatePost` redirects the moment the run
+// registers rather than waiting for the whole pipeline — the actual
+// multi-minute wait (several model calls, a possible retry loop) now
+// happens visibly on the run-detail page's own live timeline, not behind
+// this button.
 //
 // The blog/FAQ toggle below doesn't change which pipeline runs — both
 // modes go through the exact same topic_selection → research → outline →
@@ -86,9 +90,11 @@ export const GeneratePostForm = ({
           required
         />
       </div>
-      {state.error && <p className="font-medium text-destructive text-sm">{state.error}</p>}
+      {state.error && (
+        <p className="font-medium text-destructive text-sm">{state.error}</p>
+      )}
       <Button className="self-start" disabled={isPending} type="submit">
-        {isPending ? "Generating… (this can take a minute)" : "Generate"}
+        {isPending ? "Starting…" : "Generate"}
       </Button>
     </form>
   );

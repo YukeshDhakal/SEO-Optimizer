@@ -23,6 +23,14 @@ export interface CreateRunInput {
   // Stored into pipeline_runs.input below (not just held in memory) so the
   // run detail page can show which mode a given run used.
   contentType?: ContentType;
+  // Phase 13: lets a caller learn the run's id BEFORE the pipeline runs,
+  // not just after — the manual "Generate post" action generates this with
+  // crypto.randomUUID() and redirects to it immediately (rather than
+  // awaiting the whole pipeline just to learn an id), then the run-detail
+  // page's own live subscription picks up this row's insert. Omitted by
+  // the cron dispatcher (no caller waiting on an id there) - falls back to
+  // the column's own gen_random_uuid() default.
+  runId?: string;
 }
 
 export const createPipelineRun = async (
@@ -31,6 +39,7 @@ export const createPipelineRun = async (
   "use step";
 
   const insert: TablesInsert<"pipeline_runs"> = {
+    ...(input.runId ? { id: input.runId } : {}),
     organization_id: input.organizationId,
     site_connection_id: input.siteConnectionId,
     created_by: input.createdBy,
@@ -49,7 +58,9 @@ export const createPipelineRun = async (
     .single();
 
   if (error || !data) {
-    throw new Error(`Failed to create pipeline run: ${error?.message ?? "unknown error"}`);
+    throw new Error(
+      `Failed to create pipeline run: ${error?.message ?? "unknown error"}`
+    );
   }
 
   return { runId: data.id };
@@ -220,7 +231,9 @@ export const finalizeRunSucceeded = async (
     .single();
 
   if (error || !post) {
-    throw new Error(`Failed to write draft post: ${error?.message ?? "unknown error"}`);
+    throw new Error(
+      `Failed to write draft post: ${error?.message ?? "unknown error"}`
+    );
   }
 
   await database
@@ -243,7 +256,11 @@ export const markRunFailed = async (
 
   await database
     .from("pipeline_runs")
-    .update({ status: "failed", error: errorMessage, finished_at: new Date().toISOString() })
+    .update({
+      status: "failed",
+      error: errorMessage,
+      finished_at: new Date().toISOString(),
+    })
     .eq("id", runId);
 };
 
@@ -255,7 +272,11 @@ export const markRunBlocked = async (
 
   await database
     .from("pipeline_runs")
-    .update({ status: "blocked", error: reason, finished_at: new Date().toISOString() })
+    .update({
+      status: "blocked",
+      error: reason,
+      finished_at: new Date().toISOString(),
+    })
     .eq("id", runId);
 };
 
@@ -267,6 +288,10 @@ export const markRunRejected = async (
 
   await database
     .from("pipeline_runs")
-    .update({ status: "rejected", error: reason, finished_at: new Date().toISOString() })
+    .update({
+      status: "rejected",
+      error: reason,
+      finished_at: new Date().toISOString(),
+    })
     .eq("id", runId);
 };
