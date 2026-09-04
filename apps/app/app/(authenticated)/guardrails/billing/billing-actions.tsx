@@ -14,8 +14,17 @@ const initialState: BillingActionState = {};
 // Portal) — `useActionState` here exists only to surface the error case
 // (unconfigured Stripe, missing price, not an admin) inline, same pattern
 // `NewSiteForm`/`ConnectWordPressForm` already use.
-export const ChoosePlanForm = ({ planId, planName }: { planId: string; planName: string }) => {
-  const [state, formAction, isPending] = useActionState(createCheckoutSession, initialState);
+export const ChoosePlanForm = ({
+  planId,
+  planName,
+}: {
+  planId: string;
+  planName: string;
+}) => {
+  const [state, formAction, isPending] = useActionState(
+    createCheckoutSession,
+    initialState
+  );
 
   return (
     <form action={formAction} className="flex flex-col items-end gap-1">
@@ -29,14 +38,19 @@ export const ChoosePlanForm = ({ planId, planName }: { planId: string; planName:
 };
 
 export const ManageBillingForm = () => {
-  const [state, formAction, isPending] = useActionState(createPortalSession, initialState);
+  const [state, formAction, isPending] = useActionState(
+    createPortalSession,
+    initialState
+  );
 
   return (
     <form action={formAction}>
       <Button disabled={isPending} type="submit" variant="outline">
         {isPending ? "Redirecting…" : "Manage billing"}
       </Button>
-      {state.error && <p className="mt-1 text-destructive text-xs">{state.error}</p>}
+      {state.error && (
+        <p className="mt-1 text-destructive text-xs">{state.error}</p>
+      )}
     </form>
   );
 };

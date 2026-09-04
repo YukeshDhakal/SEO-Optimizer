@@ -4,12 +4,12 @@ import { useState, useTransition } from "react";
 import { toggleGlobalPause } from "../../actions/tenant-settings/toggle-pause";
 
 interface EmergencyStopPanelProps {
-  readonly organizationId: string;
-  readonly canManage: boolean;
-  readonly paused: boolean;
-  readonly siteCount: number;
-  readonly runningCount: number;
   readonly awaitingApprovalCount: number;
+  readonly canManage: boolean;
+  readonly organizationId: string;
+  readonly paused: boolean;
+  readonly runningCount: number;
+  readonly siteCount: number;
 }
 
 // Orange panel, black "stop" button — the neobrutalism handoff's own
@@ -47,13 +47,11 @@ export const EmergencyStopPanel = ({
 
   return (
     <div className="border-[3px] border-foreground bg-primary p-5 shadow-[8px_8px_0_#111]">
-      <div className="font-display text-lg tracking-tight">
-        EMERGENCY STOP
-      </div>
+      <div className="font-display text-lg tracking-tight">EMERGENCY STOP</div>
       <p className="mt-3 text-[13px] leading-relaxed">
         Stops every run in flight across all {siteCount} site
-        {siteCount === 1 ? "" : "s"}, and blocks publishing until you
-        resume. Drafts already written are kept.
+        {siteCount === 1 ? "" : "s"}, and blocks publishing until you resume.
+        Drafts already written are kept.
       </p>
       <button
         className="mt-4 w-full border-[3px] border-foreground bg-foreground py-3 font-display text-[15px] text-background tracking-tight transition-transform hover:-translate-y-0.5 disabled:opacity-60"
@@ -67,9 +65,7 @@ export const EmergencyStopPanel = ({
             ? "RESUME ALL AGENT ACTIVITY"
             : "STOP EVERYTHING NOW"}
       </button>
-      {error && (
-        <p className="mt-2 font-medium text-sm">{error}</p>
-      )}
+      {error && <p className="mt-2 font-medium text-sm">{error}</p>}
       <div className="mt-4 flex flex-col gap-2 border-foreground border-t-2 pt-4">
         {facts.map((f) => (
           <div className="flex items-baseline justify-between gap-3" key={f.k}>

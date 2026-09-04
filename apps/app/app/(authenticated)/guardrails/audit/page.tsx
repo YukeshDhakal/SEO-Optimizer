@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentOrganization } from "../../../lib/organization";
+import { GuardrailsTabs } from "../guardrails-tabs";
 
 export const metadata: Metadata = { title: "Audit log" };
 
@@ -90,11 +91,13 @@ const AuditLogPage = async ({ searchParams }: AuditLogPageProps) => {
 
   return (
     <div className="flex flex-1 flex-col gap-5 p-6">
+      <GuardrailsTabs />
+
       <div>
         <h1 className="font-display text-3xl tracking-tight">AUDIT LOG</h1>
         <p className="mt-1 text-muted-foreground text-sm">
-          Everything the agent did while you were not watching, newest
-          first. Nothing here can be edited or deleted.
+          Everything the agent did while you were not watching, newest first.
+          Nothing here can be edited or deleted.
         </p>
       </div>
 
@@ -107,7 +110,11 @@ const AuditLogPage = async ({ searchParams }: AuditLogPageProps) => {
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-accent"
             )}
-            href={f.key === "all" ? "/guardrails/audit" : `/guardrails/audit?filter=${f.key}`}
+            href={
+              f.key === "all"
+                ? "/guardrails/audit"
+                : `/guardrails/audit?filter=${f.key}`
+            }
             key={f.key}
           >
             {f.label}
@@ -121,35 +128,36 @@ const AuditLogPage = async ({ searchParams }: AuditLogPageProps) => {
             {filtered.map((entry) => {
               const { glyph, fg } = statusGlyph(pillFor(entry.action));
               return (
-              <div
-                className="grid grid-cols-[150px_20px_1fr_auto] items-start gap-4 px-4 py-3"
-                key={entry.id}
-              >
-                <span className="font-mono text-[11.5px] text-muted-foreground">
-                  {new Date(entry.created_at).toLocaleString()}
-                </span>
-                <span className={cn("mt-0.5 font-mono text-[10px]", fg)}>
-                  {glyph}
-                </span>
-                <div className="min-w-0">
-                  <div className="font-medium text-sm capitalize">
-                    {readableAction(entry.action)}
-                  </div>
-                  {Object.keys(entry.metadata as Record<string, unknown>).length > 0 && (
-                    <div className="mt-0.5 truncate text-muted-foreground text-xs">
-                      {JSON.stringify(entry.metadata)}
+                <div
+                  className="grid grid-cols-[150px_20px_1fr_auto] items-start gap-4 px-4 py-3"
+                  key={entry.id}
+                >
+                  <span className="font-mono text-[11.5px] text-muted-foreground">
+                    {new Date(entry.created_at).toLocaleString()}
+                  </span>
+                  <span className={cn("mt-0.5 font-mono text-[10px]", fg)}>
+                    {glyph}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="font-medium text-sm capitalize">
+                      {readableAction(entry.action)}
                     </div>
-                  )}
+                    {Object.keys(entry.metadata as Record<string, unknown>)
+                      .length > 0 && (
+                      <div className="mt-0.5 truncate text-muted-foreground text-xs">
+                        {JSON.stringify(entry.metadata)}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-end gap-1 text-right">
+                    <span className="rounded-[4px] bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                      {entry.entity_type}
+                    </span>
+                    <span className="font-mono text-[10px] text-muted-foreground">
+                      {entry.actor ? entry.actor.slice(0, 8) : "system"}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex flex-col items-end gap-1 text-right">
-                  <span className="rounded-[4px] bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-                    {entry.entity_type}
-                  </span>
-                  <span className="font-mono text-[10px] text-muted-foreground">
-                    {entry.actor ? entry.actor.slice(0, 8) : "system"}
-                  </span>
-                </div>
-              </div>
               );
             })}
           </div>
