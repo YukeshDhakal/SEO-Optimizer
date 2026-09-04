@@ -41,8 +41,26 @@ export const generateEmbedding = async (
   }
 };
 
-const RESEARCH_EMBEDDING_MODEL_OLLAMA = "nomic-embed-text"; // 768 dimensions - matches research_chunks.embedding
+const RESEARCH_EMBEDDING_MODEL_OLLAMA = "nomic-embed-text"; // 768 dimensions
 const DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434/v1";
+
+const resolveResearchEmbeddingProvider = (): "ollama" | "openai" =>
+  keys().RESEARCH_EMBEDDING_PROVIDER ?? "ollama";
+
+// research_chunks.embedding is provisioned at vector(1536) (Phase 12,
+// matching OpenAI's text-embedding-3-small) since production's Vercel
+// functions can't reach a local Ollama server. The code default below is
+// still "ollama" for standalone/offline use (e.g. the demo scripts this
+// feature shipped alongside), but any environment writing to the SAME
+// shared Supabase project as production - including a developer running
+// this app locally against that same database - must set
+// RESEARCH_EMBEDDING_PROVIDER="openai" too, or every insert/retrieval
+// silently no-ops on a dimension mismatch (see the operational-trap note on
+// generateResearchEmbedding below).
+export const getResearchEmbeddingModel = (): string =>
+  resolveResearchEmbeddingProvider() === "openai"
+    ? EMBEDDING_MODEL
+    : RESEARCH_EMBEDDING_MODEL_OLLAMA;
 
 // A second, independent embedding path for the research knowledge base
 // (Phase 11) - deliberately NOT shared with generateEmbedding above, which
@@ -55,16 +73,16 @@ const DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434/v1";
 //
 // Operational trap, not a bug: switching providers changes the output
 // dimension (Ollama's nomic-embed-text is 768-dim, OpenAI's
-// text-embedding-3-small is 1536-dim). research_chunks.embedding is fixed
-// at vector(768) until a follow-up migration widens it - pointing this at
-// OpenAI without that migration doesn't corrupt anything (pgvector rejects
-// the mismatch), but both the insert and the retrieval RPC then fail on
-// every call, and both call sites treat that failure as best-effort/skip -
-// so the whole knowledge base goes silently inert with no visible error.
+// text-embedding-3-small is 1536-dim, matching research_chunks.embedding as
+// of Phase 12). A provider/column dimension mismatch doesn't corrupt
+// anything (pgvector rejects it outright), but both the insert
+// (storeResearchChunksStep) and the retrieval RPC then fail on every call,
+// and both call sites treat that failure as best-effort/skip - so the whole
+// knowledge base goes silently inert with no visible error.
 export const generateResearchEmbedding = async (
   text: string
 ): Promise<number[] | null> => {
-  const provider = keys().RESEARCH_EMBEDDING_PROVIDER ?? "ollama";
+  const provider = resolveResearchEmbeddingProvider();
 
   try {
     if (provider === "openai") {

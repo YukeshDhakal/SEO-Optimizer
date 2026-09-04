@@ -9,6 +9,7 @@
 import {
   draft as draftFn,
   generateResearchEmbedding,
+  getResearchEmbeddingModel,
   geoSeoOptimize as geoSeoOptimizeFn,
   outline as outlineFn,
   research as researchFn,
@@ -165,6 +166,10 @@ export const storeResearchChunksStep = async (
         source_title: source.title,
         chunk_text: text,
         chunk_index: chunkIndex,
+        // Set explicitly, not left to a column default - the column has
+        // none as of Phase 12, since a default would mislabel a row if
+        // RESEARCH_EMBEDDING_PROVIDER is ever switched.
+        embedding_model: getResearchEmbeddingModel(),
       }))
     );
     if (rows.length === 0) {

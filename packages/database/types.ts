@@ -637,7 +637,7 @@ export type Database = {
           chunk_text: string
           created_at?: string
           embedding?: string | null
-          embedding_model?: string
+          embedding_model: string
           id?: string
           organization_id: string
           site_connection_id: string

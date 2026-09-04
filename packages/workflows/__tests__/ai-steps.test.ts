@@ -17,6 +17,7 @@ vi.mock("@repo/database", () => ({
 const generateResearchEmbeddingMock = vi.fn();
 vi.mock("@repo/ai-engine", () => ({
   generateResearchEmbedding: (...args: unknown[]) => generateResearchEmbeddingMock(...args),
+  getResearchEmbeddingModel: () => "text-embedding-3-small",
 }));
 
 import { fetchResearchContextStep, storeResearchChunksStep } from "../ai-steps";

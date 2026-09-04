@@ -1,7 +1,11 @@
 export { getModel } from "./model";
 export { webSearchTool } from "./search";
 export type { WebSearchResult } from "./search";
-export { generateEmbedding, generateResearchEmbedding } from "./embedding";
+export {
+  generateEmbedding,
+  generateResearchEmbedding,
+  getResearchEmbeddingModel,
+} from "./embedding";
 export { runPolicyCheck } from "./policy-check";
 export type { PolicyCheckResult } from "./policy-check";
 export {
