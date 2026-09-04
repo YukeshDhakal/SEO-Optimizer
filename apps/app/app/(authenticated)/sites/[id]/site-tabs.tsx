@@ -16,6 +16,7 @@ const TABS = [
   { key: "posts/publish", label: "Publish now" },
   { key: "schedule", label: "Schedule" },
   { key: "recommendations", label: "Recommendations" },
+  { key: "research", label: "Research" },
 ];
 
 // The tab row from the Quillrun Design handoff's site-detail screens
@@ -45,6 +46,9 @@ export const SiteTabs = ({ siteId }: SiteTabsProps) => {
     }
     if (rest.startsWith("recommendations")) {
       return "recommendations";
+    }
+    if (rest.startsWith("research")) {
+      return "research";
     }
     return "";
   })();
