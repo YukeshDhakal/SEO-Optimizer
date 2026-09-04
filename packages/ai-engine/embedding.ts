@@ -33,10 +33,15 @@ export const generateEmbedding = async (
       value: text.slice(0, 8000), // stay well under the model's input token limit
     });
     return embedding;
-  } catch {
+  } catch (error) {
     // A transient provider error shouldn't fail the whole pipeline run over
     // a best-effort guardrail - the duplicate check step treats this the
-    // same as "not configured": skip, don't block.
+    // same as "not configured": skip, don't block. Logged (not just
+    // swallowed) so a real, ongoing failure is actually diagnosable via
+    // Vercel runtime logs instead of looking identical to "unconfigured"
+    // forever - this exact silence was the reason a real bug here went
+    // unnoticed for days (see generateResearchEmbedding's own history).
+    console.error("generateEmbedding failed:", error);
     return null;
   }
 };
@@ -107,9 +112,13 @@ export const generateResearchEmbedding = async (
       value: text.slice(0, 8000),
     });
     return embedding;
-  } catch {
+  } catch (error) {
     // Same posture as generateEmbedding: a provider error degrades to
-    // "skipped", never fails the run.
+    // "skipped", never fails the run - but logged, not silent, so a real
+    // failure (bad key, wrong model, provider outage) is distinguishable
+    // from "just not configured" in Vercel's runtime logs instead of both
+    // looking identical forever.
+    console.error(`generateResearchEmbedding failed (provider: ${provider}):`, error);
     return null;
   }
 };

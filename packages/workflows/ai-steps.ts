@@ -105,6 +105,9 @@ export const fetchResearchContextStep = async (
     p_limit: MAX_PRIOR_CONTEXT_CHUNKS,
   });
   if (error || !data) {
+    if (error) {
+      console.error("fetchResearchContextStep: RPC failed:", error);
+    }
     return [];
   }
 
@@ -186,18 +189,31 @@ export const storeResearchChunksStep = async (
       (row): row is typeof row & { embedding: number[] } => row.embedding !== null
     );
     if (insertable.length === 0) {
+      // Distinct from "no chunks to embed" above: real content existed
+      // (rows.length > 0) but every single embedding call came back null.
+      // generateResearchEmbedding logs its own per-call error - this is
+      // the higher-level signal that the whole store silently no-op'd
+      // despite having real work to do.
+      console.error(
+        `storeResearchChunksStep: ${rows.length} chunk(s) ready but every embedding call returned null - nothing stored for site ${input.siteConnectionId}`
+      );
       return;
     }
 
-    await database.from("research_chunks").upsert(
+    const { error } = await database.from("research_chunks").upsert(
       insertable.map((row) => ({
         ...row,
         embedding: row.embedding as unknown as string,
       })),
       { onConflict: "site_connection_id,source_url,chunk_index" }
     );
-  } catch {
-    // Best-effort - see comment above.
+    if (error) {
+      console.error("storeResearchChunksStep: upsert failed:", error);
+    }
+  } catch (error) {
+    // Best-effort - a knowledge-base write failure must never fail an
+    // otherwise-valid run - but logged, not silent.
+    console.error("storeResearchChunksStep threw:", error);
   }
 };
 
