@@ -40,3 +40,58 @@ export const generateEmbedding = async (
     return null;
   }
 };
+
+const RESEARCH_EMBEDDING_MODEL_OLLAMA = "nomic-embed-text"; // 768 dimensions - matches research_chunks.embedding
+const DEFAULT_OLLAMA_BASE_URL = "http://localhost:11434/v1";
+
+// A second, independent embedding path for the research knowledge base
+// (Phase 11) - deliberately NOT shared with generateEmbedding above, which
+// stays fixed to OpenAI/1536-dim for the live duplicate-content guardrail.
+// Defaults to a local Ollama server via its OpenAI-compatible endpoint
+// (reuses createOpenAI rather than adding a new provider dependency) -
+// swap to a hosted provider with RESEARCH_EMBEDDING_PROVIDER, no code
+// change needed. Same "never throws, null means skip" contract as
+// generateEmbedding.
+//
+// Operational trap, not a bug: switching providers changes the output
+// dimension (Ollama's nomic-embed-text is 768-dim, OpenAI's
+// text-embedding-3-small is 1536-dim). research_chunks.embedding is fixed
+// at vector(768) until a follow-up migration widens it - pointing this at
+// OpenAI without that migration doesn't corrupt anything (pgvector rejects
+// the mismatch), but both the insert and the retrieval RPC then fail on
+// every call, and both call sites treat that failure as best-effort/skip -
+// so the whole knowledge base goes silently inert with no visible error.
+export const generateResearchEmbedding = async (
+  text: string
+): Promise<number[] | null> => {
+  const provider = keys().RESEARCH_EMBEDDING_PROVIDER ?? "ollama";
+
+  try {
+    if (provider === "openai") {
+      const apiKey = keys().OPENAI_API_KEY;
+      if (!apiKey) {
+        return null;
+      }
+      const openai = createOpenAI({ apiKey });
+      const { embedding } = await embed({
+        model: openai.textEmbeddingModel(EMBEDDING_MODEL),
+        value: text.slice(0, 8000),
+      });
+      return embedding;
+    }
+
+    const baseURL = keys().OLLAMA_BASE_URL ?? DEFAULT_OLLAMA_BASE_URL;
+    // Ollama ignores the API key on its OpenAI-compatible endpoint, but the
+    // AI SDK's client requires a non-empty string to construct.
+    const ollama = createOpenAI({ baseURL, apiKey: "ollama" });
+    const { embedding } = await embed({
+      model: ollama.textEmbeddingModel(RESEARCH_EMBEDDING_MODEL_OLLAMA),
+      value: text.slice(0, 8000),
+    });
+    return embedding;
+  } catch {
+    // Same posture as generateEmbedding: a provider error degrades to
+    // "skipped", never fails the run.
+    return null;
+  }
+};

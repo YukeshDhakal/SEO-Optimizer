@@ -23,12 +23,28 @@ export type ResearchNotes = z.infer<typeof researchNotesSchema>;
 export interface ResearchSource {
   title: string | null;
   url: string;
+  // Phase A: Tavily's raw extracted snippet, kept so steps/research.ts can
+  // ground fact-extraction in real source text instead of its own prior
+  // prose summary. Optional/additive - every existing consumer (outlineStep,
+  // draftStep, geoSeoOptimizeStep) only reads .title/.url and is unaffected.
+  content?: string;
 }
 
 export interface ResearchResult {
   facts: string[];
   sources: ResearchSource[];
   candidateFaqs: string[];
+}
+
+// Phase B: a chunk of previously-gathered research for this site, retrieved
+// from research_chunks and passed into research() as grounding context for
+// a new run. A typed interface (not a bare string[]) so the prompt can
+// attribute each chunk back to its source - mirrors topic-selection.ts's
+// TopicSelectionQuery, which keeps @repo/ai-engine DB-agnostic the same way.
+export interface ResearchContextChunk {
+  chunkText: string;
+  sourceTitle: string | null;
+  sourceUrl: string;
 }
 
 // The customer's own site identity (packages/workflows/db-steps.ts's

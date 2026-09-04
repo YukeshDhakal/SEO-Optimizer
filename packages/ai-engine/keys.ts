@@ -23,10 +23,22 @@ export const keys = () =>
       // file): `embedding.ts` degrades to skipping the duplicate check
       // rather than throwing when this is absent.
       OPENAI_API_KEY: z.string().startsWith("sk-").optional(),
+      // Phase 11: swappable embedding provider for the research knowledge
+      // base (distinct from OPENAI_API_KEY above, which stays
+      // generateEmbedding's fixed provider for duplicate-content - see
+      // embedding.ts). Defaults to "ollama" (a local, free, already-running
+      // server) when unset, so this feature works with zero configuration
+      // in dev; production needs either a network-reachable Ollama host or
+      // RESEARCH_EMBEDDING_PROVIDER="openai".
+      RESEARCH_EMBEDDING_PROVIDER: z.enum(["ollama", "openai"]).optional(),
+      // Defaults to http://localhost:11434/v1 when unset (embedding.ts).
+      OLLAMA_BASE_URL: z.string().url().optional(),
     },
     runtimeEnv: {
       GOOGLE_GENERATIVE_AI_API_KEY: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
       TAVILY_API_KEY: process.env.TAVILY_API_KEY,
       OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+      RESEARCH_EMBEDDING_PROVIDER: process.env.RESEARCH_EMBEDDING_PROVIDER,
+      OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL,
     },
   });

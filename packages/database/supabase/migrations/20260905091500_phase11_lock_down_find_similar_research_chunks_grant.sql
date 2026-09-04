@@ -1,0 +1,14 @@
+-- Fix: find_similar_research_chunks was granted to `authenticated` in the
+-- Phase 11 migration, but the function trusts the caller-supplied
+-- p_site_connection_id with no internal org-membership check (unlike this
+-- repo's get_site_credentials-style RPCs, which check auth.uid() internally
+-- before returning data). As a SECURITY DEFINER function that bypasses RLS,
+-- that grant let any signed-in user of any org pull another org's
+-- research_chunks content via a direct /rest/v1/rpc call. Caught by the
+-- Supabase security advisor immediately after the Phase 11 migration first
+-- shipped (same discipline as every other phase, see PRD.md's "Recurring
+-- pattern worth knowing"). This function is only ever called from the
+-- service-role client (fetchResearchContextStep) - revoke authenticated the
+-- same way find_similar_posts (the precedent this mirrors) was apparently
+-- never granted it in the first place.
+revoke execute on function public.find_similar_research_chunks(uuid, vector, int, float) from authenticated;

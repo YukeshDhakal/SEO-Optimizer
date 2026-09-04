@@ -16,10 +16,12 @@ import {
 } from "@repo/ai-engine";
 import {
   draftStep,
+  fetchResearchContextStep,
   geoSeoOptimizeStep,
   outlineStep,
   policyCheckStep,
   researchStep,
+  storeResearchChunksStep,
   topicSelectionStep,
 } from "./ai-steps";
 import {
@@ -153,13 +155,32 @@ export async function contentPipelineWorkflow(
     })
   );
 
+  // Phase 11: retrieve prior research for this site before searching again,
+  // and persist this run's own sources afterward - both outside
+  // runTrackedStep, same convention as getSiteIdentity/getTenantSettings
+  // above (knowledge-base plumbing, not a pipeline stage the run-detail UI
+  // needs to surface). Neither call can fail this run: both steps are
+  // best-effort internally.
+  const priorContext = await fetchResearchContextStep({
+    siteConnectionId: input.siteConnectionId,
+    topic: topic.topic,
+    primaryKeyword: topic.primaryKeyword,
+  });
+
   const researchResult = await runTrackedStep("research", () =>
     researchStep({
       organizationId: input.organizationId,
       topic: topic.topic,
       primaryKeyword: topic.primaryKeyword,
+      priorContext,
     })
   );
+
+  await storeResearchChunksStep({
+    organizationId: input.organizationId,
+    siteConnectionId: input.siteConnectionId,
+    sources: researchResult.sources,
+  });
 
   const outlineResult = await runTrackedStep("outline", () =>
     outlineStep({

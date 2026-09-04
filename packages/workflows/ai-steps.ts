@@ -8,6 +8,7 @@
 // keep working exactly as before.
 import {
   draft as draftFn,
+  generateResearchEmbedding,
   geoSeoOptimize as geoSeoOptimizeFn,
   outline as outlineFn,
   research as researchFn,
@@ -19,8 +20,10 @@ import {
   type Outline,
   type OutlineInput,
   type PolicyCheckResult,
+  type ResearchContextChunk,
   type ResearchInput,
   type ResearchResult,
+  type ResearchSource,
   type TopicSelection,
 } from "@repo/ai-engine";
 import { database } from "@repo/database";
@@ -65,6 +68,132 @@ export const researchStep = async (
 ): Promise<ResearchResult> => {
   "use step";
   return researchFn(input);
+};
+
+export interface FetchResearchContextStepInput {
+  siteConnectionId: string;
+  topic: string;
+  primaryKeyword: string;
+}
+
+const MAX_PRIOR_CONTEXT_CHUNKS = 5;
+
+// Phase 11: retrieves prior research for this site before researchStep
+// runs, same "own database read, ai-engine stays DB-agnostic" convention as
+// topicSelectionStep above. Deliberately a SEPARATE step from researchStep
+// (not folded into it): Workflow DevKit retries a failed step from the top,
+// so a combined pre-read + Tavily/LLM call + post-write step would re-pay
+// for the expensive search/LLM work on every retry of a cheap DB
+// read/write. Best-effort - returns [] rather than throwing, since missing
+// prior context should never block a run that would otherwise succeed.
+export const fetchResearchContextStep = async (
+  input: FetchResearchContextStepInput
+): Promise<ResearchContextChunk[]> => {
+  "use step";
+
+  const embedding = await generateResearchEmbedding(
+    `${input.topic} ${input.primaryKeyword}`
+  );
+  if (!embedding) {
+    return [];
+  }
+
+  const { data, error } = await database.rpc("find_similar_research_chunks", {
+    p_site_connection_id: input.siteConnectionId,
+    p_embedding: embedding as unknown as string,
+    p_limit: MAX_PRIOR_CONTEXT_CHUNKS,
+  });
+  if (error || !data) {
+    return [];
+  }
+
+  return data.map((row) => ({
+    chunkText: row.chunk_text,
+    sourceTitle: row.source_title,
+    sourceUrl: row.source_url,
+  }));
+};
+
+const CHUNK_TARGET_CHARS = 800;
+
+// Simple sentence-boundary splitter - good enough for chunking a Tavily
+// snippet (a few hundred to ~2000 chars), not meant to handle arbitrary
+// long-form text.
+const chunkText = (text: string): string[] => {
+  const sentences = text.split(/(?<=[.!?])\s+/).filter(Boolean);
+  const chunks: string[] = [];
+  let current = "";
+  for (const sentence of sentences) {
+    if (current && current.length + sentence.length > CHUNK_TARGET_CHARS) {
+      chunks.push(current.trim());
+      current = "";
+    }
+    current += (current ? " " : "") + sentence;
+  }
+  if (current) {
+    chunks.push(current.trim());
+  }
+  return chunks;
+};
+
+export interface StoreResearchChunksStepInput {
+  organizationId: string;
+  siteConnectionId: string;
+  sources: ResearchSource[];
+}
+
+// Phase 11: chunks + embeds researchStep's own source content and upserts
+// into research_chunks for future runs to retrieve via
+// fetchResearchContextStep above. Called AFTER researchStep, not folded
+// into it, for the same retry-cost reason as fetchResearchContextStep.
+// Upserts on (site_connection_id, source_url, chunk_index) so a retried
+// call is a no-op, never a duplicate. Wrapped in try/catch - best-effort,
+// same posture as guardrails.ts's writeAuditLog - since nothing upstream
+// catches around a directly-called step the way runTrackedStep does, and a
+// knowledge-base write failure must never fail an otherwise-valid run.
+export const storeResearchChunksStep = async (
+  input: StoreResearchChunksStepInput
+): Promise<void> => {
+  "use step";
+
+  try {
+    const rows = input.sources.flatMap((source) =>
+      chunkText(source.content ?? "").map((text, chunkIndex) => ({
+        organization_id: input.organizationId,
+        site_connection_id: input.siteConnectionId,
+        source_url: source.url,
+        source_title: source.title,
+        chunk_text: text,
+        chunk_index: chunkIndex,
+      }))
+    );
+    if (rows.length === 0) {
+      return;
+    }
+
+    const embedded = await Promise.all(
+      rows.map(async (row) => ({
+        ...row,
+        embedding: await generateResearchEmbedding(row.chunk_text),
+      }))
+    );
+    const insertable = embedded.filter(
+      (row): row is typeof row & { embedding: number[] } => row.embedding !== null
+    );
+    if (insertable.length === 0) {
+      return;
+    }
+
+    await database.from("research_chunks").upsert(
+      insertable.map((row) => ({
+        ...row,
+        embedding: row.embedding as unknown as string,
+      })),
+      { onConflict: "site_connection_id,source_url,chunk_index" }
+    );
+  } catch {
+    // Best-effort - see comment above.
+  }
 };
 
 export const outlineStep = async (input: OutlineInput): Promise<Outline> => {

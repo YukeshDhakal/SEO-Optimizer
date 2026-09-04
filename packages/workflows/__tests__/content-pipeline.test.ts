@@ -51,6 +51,13 @@ vi.mock("@repo/ai-engine", async () => {
     // same "not configured, skip" branch (`!embedding` is true either way)
     // without every existing test needing to know this guardrail exists.
     generateEmbedding: vi.fn(),
+    // Phase 11: fetchResearchContextStep/storeResearchChunksStep (real
+    // ai-steps.ts code, unmocked) call this directly. Left returning
+    // `undefined` by default (same fail-open posture as generateEmbedding
+    // above) so every pre-existing test exercises the "no prior
+    // context"/"skip storing" branch without needing to know this feature
+    // exists.
+    generateResearchEmbedding: vi.fn(),
   };
 });
 

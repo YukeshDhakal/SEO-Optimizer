@@ -619,6 +619,60 @@ export type Database = {
           },
         ]
       }
+      research_chunks: {
+        Row: {
+          chunk_index: number
+          chunk_text: string
+          created_at: string
+          embedding: string | null
+          embedding_model: string
+          id: string
+          organization_id: string
+          site_connection_id: string
+          source_title: string | null
+          source_url: string
+        }
+        Insert: {
+          chunk_index?: number
+          chunk_text: string
+          created_at?: string
+          embedding?: string | null
+          embedding_model?: string
+          id?: string
+          organization_id: string
+          site_connection_id: string
+          source_title?: string | null
+          source_url: string
+        }
+        Update: {
+          chunk_index?: number
+          chunk_text?: string
+          created_at?: string
+          embedding?: string | null
+          embedding_model?: string
+          id?: string
+          organization_id?: string
+          site_connection_id?: string
+          source_title?: string | null
+          source_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "research_chunks_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "research_chunks_site_connection_id_fkey"
+            columns: ["site_connection_id"]
+            isOneToOne: false
+            referencedRelation: "site_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       schedules: {
         Row: {
           cadence: string
@@ -1046,6 +1100,20 @@ export type Database = {
           id: string
           similarity: number
           title: string
+        }[]
+      }
+      find_similar_research_chunks: {
+        Args: {
+          p_embedding: string
+          p_limit?: number
+          p_min_similarity?: number
+          p_site_connection_id: string
+        }
+        Returns: {
+          chunk_text: string
+          similarity: number
+          source_title: string
+          source_url: string
         }[]
       }
       get_google_ads_credentials: {
