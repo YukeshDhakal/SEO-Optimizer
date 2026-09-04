@@ -968,3 +968,216 @@ describe("/internal/schedules", () => {
     expect(state.deletes).not.toContain("schedules");
   });
 });
+
+// Phase 10. These routes now serve two callers: n8n (which sends neither
+// header) and the customer-facing MCP gateway (which sends both on every
+// self-call). The first describe below is the backward-compatibility proof for
+// the existing n8n integration — it asserts the *absence* of any change, which
+// is the only thing that makes editing eight production routes at once safe.
+const MCP_HEADERS = {
+  "x-mcp-source": "customer_mcp",
+  "x-mcp-actor": "user-1",
+};
+
+describe("audit attribution with no MCP headers (n8n's existing calls)", () => {
+  const cases: [string, () => Promise<unknown>, string][] = [
+    [
+      "/internal/generate",
+      () =>
+        generatePost(
+          authed("/internal/generate", {
+            method: "POST",
+            body: generateBody(),
+            query: "",
+          })
+        ),
+      "run.started",
+    ],
+    [
+      "/internal/publish",
+      () =>
+        publishPost(
+          authed("/internal/publish", {
+            method: "POST",
+            body: JSON.stringify({ organizationId: "org-1", postId: "post-1" }),
+            query: "",
+          })
+        ),
+      "post.published",
+    ],
+    [
+      "/internal/schedules",
+      () =>
+        createSchedule(
+          authed("/internal/schedules", {
+            method: "POST",
+            body: JSON.stringify({
+              organizationId: "org-1",
+              siteConnectionId: "site-1",
+              cadence: "0 9 * * 1",
+              topicHint: "coffee",
+            }),
+            query: "",
+          })
+        ),
+      "schedule.created",
+    ],
+    [
+      "/internal/recommendations/dismiss",
+      () =>
+        dismissRecommendation(
+          authed("/internal/recommendations/dismiss", {
+            method: "POST",
+            body: JSON.stringify({ id: "rec-1", organizationId: "org-1" }),
+            query: "",
+          })
+        ),
+      "recommendation.dismissed",
+    ],
+  ];
+
+  it.each(
+    cases
+  )("%s still writes actor null and source n8n_mcp", async (_path, run, action) => {
+    await run();
+
+    expect(state.writeAuditLogMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actor: null,
+        action,
+        metadata: expect.objectContaining({ source: "n8n_mcp" }),
+      })
+    );
+  });
+});
+
+describe("audit attribution with MCP headers (the customer gateway's calls)", () => {
+  it("attributes a started run to the API key's creator", async () => {
+    await generatePost(
+      authed("/internal/generate", {
+        method: "POST",
+        body: generateBody(),
+        headers: MCP_HEADERS,
+        query: "",
+      })
+    );
+
+    expect(state.writeAuditLogMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actor: "user-1",
+        action: "run.started",
+        metadata: expect.objectContaining({ source: "customer_mcp" }),
+      })
+    );
+  });
+
+  it("attributes a blocked run too, so a guardrail block is traceable to the customer", async () => {
+    state.checkQuotaMock.mockResolvedValue({ blocked: true, reason: "nope" });
+
+    await generatePost(
+      authed("/internal/generate", {
+        method: "POST",
+        body: generateBody(),
+        headers: MCP_HEADERS,
+        query: "",
+      })
+    );
+
+    expect(state.writeAuditLogMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actor: "user-1",
+        action: "run.blocked.quota",
+        metadata: expect.objectContaining({ source: "customer_mcp" }),
+      })
+    );
+  });
+
+  it("attributes a publish", async () => {
+    await publishPost(
+      authed("/internal/publish", {
+        method: "POST",
+        body: JSON.stringify({ organizationId: "org-1", postId: "post-1" }),
+        headers: MCP_HEADERS,
+        query: "",
+      })
+    );
+
+    expect(state.writeAuditLogMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actor: "user-1",
+        action: "post.published",
+        metadata: expect.objectContaining({ source: "customer_mcp" }),
+      })
+    );
+  });
+
+  it("attributes a schedule creation", async () => {
+    await createSchedule(
+      authed("/internal/schedules", {
+        method: "POST",
+        body: JSON.stringify({
+          organizationId: "org-1",
+          siteConnectionId: "site-1",
+          cadence: "0 9 * * 1",
+          topicHint: "coffee",
+        }),
+        headers: MCP_HEADERS,
+        query: "",
+      })
+    );
+
+    expect(state.writeAuditLogMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actor: "user-1",
+        action: "schedule.created",
+        metadata: expect.objectContaining({ source: "customer_mcp" }),
+      })
+    );
+  });
+
+  it("attributes a recommendation dismissal", async () => {
+    await dismissRecommendation(
+      authed("/internal/recommendations/dismiss", {
+        method: "POST",
+        body: JSON.stringify({ id: "rec-1", organizationId: "org-1" }),
+        headers: MCP_HEADERS,
+        query: "",
+      })
+    );
+
+    expect(state.writeAuditLogMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actor: "user-1",
+        action: "recommendation.dismissed",
+        metadata: expect.objectContaining({ source: "customer_mcp" }),
+      })
+    );
+  });
+
+  it("leaves the auto-pause receipt's metadata shape alone, since it records the DB trigger rather than the caller", async () => {
+    state.rows.site_connections = [
+      {
+        ...(state.rows.site_connections[0] as Record<string, unknown>),
+        consecutive_publish_failures: 2,
+      },
+    ];
+    state.publishPostMock.mockRejectedValue(new Error("CMS said no"));
+
+    await publishPost(
+      authed("/internal/publish", {
+        method: "POST",
+        body: JSON.stringify({ organizationId: "org-1", postId: "post-1" }),
+        headers: MCP_HEADERS,
+        query: "",
+      })
+    );
+
+    expect(state.writeAuditLogMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actor: "user-1",
+        action: "site.auto_paused",
+        metadata: { consecutiveFailures: 3 },
+      })
+    );
+  });
+});

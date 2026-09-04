@@ -67,6 +67,9 @@ const SettingsPage = async () => {
             <Link href="/guardrails/billing">Billing</Link>
           </Button>
           <Button asChild size="sm" variant="outline">
+            <Link href="/guardrails/api-keys">API keys</Link>
+          </Button>
+          <Button asChild size="sm" variant="outline">
             <Link href="/guardrails/audit">Audit log</Link>
           </Button>
         </div>

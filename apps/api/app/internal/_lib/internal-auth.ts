@@ -35,6 +35,29 @@ export const isAuthorized = (request: Request): boolean => {
 // external AI agent took through MCP.
 export const MCP_ACTOR = "n8n_mcp";
 
+// Phase 10. These routes now have two callers, not one: n8n's own tool nodes
+// (the operator's personal automation) and the customer-facing MCP gateway at
+// `app/mcp/route.ts`, which self-calls them with the same
+// `N8N_INTERNAL_SECRET` after authenticating a per-tenant API key of its own.
+// A tenant reading their own audit log has to be able to tell those apart —
+// "n8n_mcp" on a customer's own row would name an integration they don't have
+// and can't inspect, which is a trust problem, not a cosmetic one.
+//
+// Both helpers are deliberately fallback-shaped rather than required: n8n sends
+// neither header, so every existing call keeps producing byte-identical audit
+// rows (`actor: null`, `source: "n8n_mcp"`). That is what makes this change
+// safe to make to eight production-tested routes at once, and it is asserted
+// directly in `__tests__/internal-routes.test.ts`.
+export const resolveAuditSource = (request: Request): string =>
+  request.headers.get("x-mcp-source") ?? MCP_ACTOR;
+
+// `audit_log.actor` is a uuid column, so this may only ever carry a real
+// `auth.users` id — the gateway passes the `api_keys.created_by` of the key
+// that authenticated the request. Anything else must stay null; see MCP_ACTOR's
+// comment above for what happens to an audit row that fails to insert.
+export const resolveAuditActorId = (request: Request): string | null =>
+  request.headers.get("x-mcp-actor");
+
 export const unauthorized = (): Response =>
   new Response("Unauthorized", { status: 401 });
 

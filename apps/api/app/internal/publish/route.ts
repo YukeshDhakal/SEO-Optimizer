@@ -7,9 +7,10 @@ import {
   isAuthorized,
   loadOrganization,
   loadSiteForOrg,
-  MCP_ACTOR,
   notFound,
   readJsonBody,
+  resolveAuditActorId,
+  resolveAuditSource,
   serverError,
   stringField,
   unauthorized,
@@ -111,12 +112,12 @@ export const POST = async (request: Request): Promise<Response> => {
   if (killSwitch.blocked) {
     await writeAuditLog({
       organizationId,
-      actor: null,
+      actor: resolveAuditActorId(request),
       action: "publish.blocked.kill_switch",
       entityType: "post",
       entityId: post.id,
       metadata: {
-        source: MCP_ACTOR,
+        source: resolveAuditSource(request),
         reason: killSwitch.reason,
         siteConnectionId: site.id,
       },
@@ -180,12 +181,12 @@ export const POST = async (request: Request): Promise<Response> => {
 
     await writeAuditLog({
       organizationId,
-      actor: null,
+      actor: resolveAuditActorId(request),
       action: "post.published",
       entityType: "post",
       entityId: post.id,
       metadata: {
-        source: MCP_ACTOR,
+        source: resolveAuditSource(request),
         siteConnectionId: site.id,
         publishedUrl: result.publishedUrl,
       },
@@ -217,17 +218,26 @@ export const POST = async (request: Request): Promise<Response> => {
 
     await writeAuditLog({
       organizationId,
-      actor: null,
+      actor: resolveAuditActorId(request),
       action: "post.publish_failed",
       entityType: "post",
       entityId: post.id,
-      metadata: { source: MCP_ACTOR, siteConnectionId: site.id, error: message },
+      metadata: {
+        source: resolveAuditSource(request),
+        siteConnectionId: site.id,
+        error: message,
+      },
     });
 
+    // Left without a `source` deliberately: this entry records what the
+    // database trigger did (auto-pausing the site at three failures), not what
+    // the caller asked for, and its metadata shape is asserted exactly in
+    // internal-routes.test.ts. `actor` still resolves, so a customer's own
+    // auto-pause is still attributed to them.
     if (failures >= 3) {
       await writeAuditLog({
         organizationId,
-        actor: null,
+        actor: resolveAuditActorId(request),
         action: "site.auto_paused",
         entityType: "site_connection",
         entityId: site.id,

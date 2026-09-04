@@ -14,6 +14,53 @@ export type Database = {
   }
   public: {
     Tables: {
+      api_keys: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          key_hash: string
+          key_prefix: string
+          last_used_at: string | null
+          monthly_call_limit: number | null
+          name: string
+          organization_id: string
+          revoked_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          key_hash: string
+          key_prefix: string
+          last_used_at?: string | null
+          monthly_call_limit?: number | null
+          name: string
+          organization_id: string
+          revoked_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          key_hash?: string
+          key_prefix?: string
+          last_used_at?: string | null
+          monthly_call_limit?: number | null
+          name?: string
+          organization_id?: string
+          revoked_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_keys_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -232,6 +279,51 @@ export type Database = {
             columns: ["site_connection_id"]
             isOneToOne: false
             referencedRelation: "site_connections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mcp_usage_counters: {
+        Row: {
+          api_key_id: string
+          calls_count: number
+          created_at: string
+          id: string
+          organization_id: string
+          period_end: string
+          period_start: string
+        }
+        Insert: {
+          api_key_id: string
+          calls_count?: number
+          created_at?: string
+          id?: string
+          organization_id: string
+          period_end: string
+          period_start: string
+        }
+        Update: {
+          api_key_id?: string
+          calls_count?: number
+          created_at?: string
+          id?: string
+          organization_id?: string
+          period_end?: string
+          period_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcp_usage_counters_api_key_id_fkey"
+            columns: ["api_key_id"]
+            isOneToOne: false
+            referencedRelation: "api_keys"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mcp_usage_counters_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]

@@ -11,10 +11,11 @@ import {
   isAuthorized,
   loadOrganization,
   loadSiteForOrg,
-  MCP_ACTOR,
   notFound,
   readJsonBody,
   resolveActingUser,
+  resolveAuditActorId,
+  resolveAuditSource,
   serverError,
   stringField,
   unauthorized,
@@ -166,11 +167,16 @@ export const POST = async (request: Request): Promise<Response> => {
   if (gate) {
     await writeAuditLog({
       organizationId,
-      actor: null,
+      actor: resolveAuditActorId(request),
       action: gate.action,
       entityType: "site_connection",
       entityId: siteConnectionId,
-      metadata: { source: MCP_ACTOR, reason: gate.reason, topicHint, contentType },
+      metadata: {
+        source: resolveAuditSource(request),
+        reason: gate.reason,
+        topicHint,
+        contentType,
+      },
     });
     return Response.json(
       { status: "blocked", reason: gate.reason },
@@ -197,12 +203,12 @@ export const POST = async (request: Request): Promise<Response> => {
 
   await writeAuditLog({
     organizationId,
-    actor: null,
+    actor: resolveAuditActorId(request),
     action: "run.started",
     entityType: "site_connection",
     entityId: siteConnectionId,
     metadata: {
-      source: MCP_ACTOR,
+      source: resolveAuditSource(request),
       topicHint,
       contentType,
       createdBy,

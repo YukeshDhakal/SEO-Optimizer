@@ -1,3 +1,9 @@
+export type { GeneratedApiKey } from "./api-keys";
+// Phase 10 customer MCP - pure crypto helpers with no I/O, shared by the
+// dashboard server action that issues a key (apps/app) and the gateway that
+// verifies one on every request (apps/api). One copy so the two can never
+// disagree about the algorithm.
+export { generateApiKey, hashApiKey, isApiKeyShape } from "./api-keys";
 export type { QuotaCheckResult } from "./billing";
 // Phase 6 billing - same "plain functions for direct server-action/route-
 // handler use" reasoning as the guardrails re-export above.

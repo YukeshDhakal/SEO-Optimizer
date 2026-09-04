@@ -3,9 +3,10 @@ import { writeAuditLog } from "@repo/workflows";
 import {
   badRequest,
   isAuthorized,
-  MCP_ACTOR,
   notFound,
   readJsonBody,
+  resolveAuditActorId,
+  resolveAuditSource,
   serverError,
   stringField,
   unauthorized,
@@ -59,12 +60,12 @@ export const POST = async (request: Request): Promise<Response> => {
 
   await writeAuditLog({
     organizationId,
-    actor: null,
+    actor: resolveAuditActorId(request),
     action: "recommendation.dismissed",
     entityType: "content_recommendation",
     entityId: data.id,
     metadata: {
-      source: MCP_ACTOR,
+      source: resolveAuditSource(request),
       siteConnectionId: data.site_connection_id,
       recommendationType: data.recommendation_type,
       subjectKey: data.subject_key,

@@ -9,11 +9,12 @@ import {
   isAuthorized,
   loadOrganization,
   loadSiteForOrg,
-  MCP_ACTOR,
   notFound,
   parseLimit,
   readJsonBody,
   resolveActingUser,
+  resolveAuditActorId,
+  resolveAuditSource,
   serverError,
   stringField,
   unauthorized,
@@ -203,12 +204,12 @@ export const POST = async (request: Request): Promise<Response> => {
 
   await writeAuditLog({
     organizationId,
-    actor: null,
+    actor: resolveAuditActorId(request),
     action: "schedule.created",
     entityType: "schedule",
     entityId: data.id,
     metadata: {
-      source: MCP_ACTOR,
+      source: resolveAuditSource(request),
       siteConnectionId,
       cadence,
       timezone,
@@ -272,12 +273,12 @@ export const PATCH = async (request: Request): Promise<Response> => {
 
   await writeAuditLog({
     organizationId,
-    actor: null,
+    actor: resolveAuditActorId(request),
     action: enabled ? "schedule.enabled" : "schedule.disabled",
     entityType: "schedule",
     entityId: id,
     metadata: {
-      source: MCP_ACTOR,
+      source: resolveAuditSource(request),
       siteConnectionId: data.site_connection_id,
       enabled,
     },
@@ -324,12 +325,12 @@ export const DELETE = async (request: Request): Promise<Response> => {
 
   await writeAuditLog({
     organizationId,
-    actor: null,
+    actor: resolveAuditActorId(request),
     action: "schedule.deleted",
     entityType: "schedule",
     entityId: id,
     metadata: {
-      source: MCP_ACTOR,
+      source: resolveAuditSource(request),
       siteConnectionId: existing.site_connection_id,
       cadence: existing.cadence,
       topicHint: existing.topic_hint,
