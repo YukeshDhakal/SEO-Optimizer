@@ -43,7 +43,11 @@ const adsFetch = async <T>(
 
   if (!response.ok) {
     // Google Ads API REST errors are JSON: { error: { code, message,
-    // status, details: [...] } } — surfacing `message` here is what makes
+    // status, details: [{ errors: [{ errorCode, message, ... }] }] } } —
+    // `error.message` alone is just a generic wrapper ("Request contains
+    // an invalid argument." for every INVALID_ARGUMENT, regardless of
+    // cause) - the actually-actionable reason lives one level deeper, in
+    // details[].errors[].errorCode/message. Surfacing both is what makes
     // "no accessible accounts" distinguishable from "the developer-token
     // header was empty/invalid" (401 UNAUTHENTICATED) or "this developer
     // token doesn't have access to this customer" (403 PERMISSION_DENIED)
@@ -53,10 +57,28 @@ const adsFetch = async <T>(
     let detail = "";
     try {
       const body = (await response.json()) as {
-        error?: { message?: string; status?: string };
+        error?: {
+          message?: string;
+          status?: string;
+          details?: {
+            errors?: {
+              errorCode?: Record<string, string>;
+              message?: string;
+            }[];
+          }[];
+        };
       };
       if (body.error?.message) {
         detail = ` ${body.error.status ? `[${body.error.status}] ` : ""}${body.error.message}`;
+      }
+      const nestedErrors = body.error?.details?.flatMap((d) => d.errors ?? []) ?? [];
+      if (nestedErrors.length > 0) {
+        detail += ` ${nestedErrors
+          .map((e) => {
+            const code = e.errorCode ? Object.entries(e.errorCode).map(([k, v]) => `${k}.${v}`).join(",") : "";
+            return `[${code}] ${e.message ?? ""}`.trim();
+          })
+          .join("; ")}`;
       }
     } catch {
       // Body wasn't JSON — fall through with just the HTTP status.
