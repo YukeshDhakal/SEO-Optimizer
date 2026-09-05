@@ -66,7 +66,25 @@ export const GET = async (request: Request): Promise<Response> => {
       code,
       `${env.NEXT_PUBLIC_APP_URL}${CALLBACK_PATH}`
     );
-  } catch {
+  } catch (error) {
+    // Previously swallowed entirely, DB untouched - this and the RPC-error
+    // branch below are silent early exits that never wrote to
+    // google_ads_credentials, so a failure here looked identical on the
+    // site page to a stale success/error from days earlier (the persisted
+    // row just never got overwritten). Logging AND persisting the real
+    // reason now, so a fresh failure is finally visible instead of
+    // indistinguishable from stale state.
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(
+      `[google-ads/callback] exchangeCodeForTokens failed for site ${siteConnectionId}:`,
+      error
+    );
+    await supabase
+      .from("google_ads_credentials")
+      .upsert(
+        { site_connection_id: siteConnectionId, status: "error", error_message: `Token exchange failed: ${message}` },
+        { onConflict: "site_connection_id" }
+      );
     return NextResponse.redirect(siteUrl(siteConnectionId, "error"));
   }
 
@@ -79,6 +97,16 @@ export const GET = async (request: Request): Promise<Response> => {
     p_secret: tokens,
   });
   if (rpcError) {
+    console.error(
+      `[google-ads/callback] set_google_ads_credentials RPC failed for site ${siteConnectionId}:`,
+      rpcError
+    );
+    await supabase
+      .from("google_ads_credentials")
+      .upsert(
+        { site_connection_id: siteConnectionId, status: "error", error_message: `Saving credentials failed: ${rpcError.message}` },
+        { onConflict: "site_connection_id" }
+      );
     return NextResponse.redirect(siteUrl(siteConnectionId, "error"));
   }
 
