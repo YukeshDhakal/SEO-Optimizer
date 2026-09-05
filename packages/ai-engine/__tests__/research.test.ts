@@ -1,13 +1,25 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { generateTextMock, generateObjectMock } = vi.hoisted(() => ({
-  generateTextMock: vi.fn(),
-  generateObjectMock: vi.fn(),
-}));
+const { generateTextMock, generateObjectMock, MockNoObjectGeneratedError } = vi.hoisted(() => {
+  class MockNoObjectGeneratedError extends Error {
+    cause?: unknown;
+    text?: string;
+    finishReason?: string;
+    static isInstance(error: unknown): error is MockNoObjectGeneratedError {
+      return error instanceof MockNoObjectGeneratedError;
+    }
+  }
+  return {
+    generateTextMock: vi.fn(),
+    generateObjectMock: vi.fn(),
+    MockNoObjectGeneratedError,
+  };
+});
 vi.mock("ai", () => ({
   generateText: generateTextMock,
   generateObject: generateObjectMock,
   stepCountIs: vi.fn(() => "mock-stop-condition"),
+  NoObjectGeneratedError: MockNoObjectGeneratedError,
 }));
 // Same reasoning as topic-selection.test.ts: model.ts pulls in
 // "server-only", which throws outside Next.js's bundler.
@@ -127,5 +139,37 @@ describe("research", () => {
     });
 
     expect(result.sources).toEqual([]);
+  });
+
+  it("falls back to prose-derived facts when generateObject throws NoObjectGeneratedError", async () => {
+    generateTextMock.mockResolvedValue({
+      text: "Burr grinders beat blade grinders for consistency.\nThey also run cooler, reducing flavour loss.",
+      toolResults: [],
+    });
+    const schemaError = new MockNoObjectGeneratedError("response did not match schema");
+    schemaError.text = "{\"facts\":[]}";
+    generateObjectMock.mockRejectedValue(schemaError);
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = await research({ organizationId: "org-1", topic: "coffee grinders", primaryKeyword: "coffee grinder" });
+
+    expect(result.facts).toEqual([
+      "Burr grinders beat blade grinders for consistency.",
+      "They also run cooler, reducing flavour loss.",
+    ]);
+    expect(consoleErrorSpy).toHaveBeenCalled();
+    consoleErrorSpy.mockRestore();
+  });
+
+  it("falls back to prose-derived facts when generateObject returns a genuinely empty facts array", async () => {
+    generateTextMock.mockResolvedValue({
+      text: "There is very little published information on this niche topic.",
+      toolResults: [],
+    });
+    generateObjectMock.mockResolvedValue({ object: { facts: [], candidateFaqs: [] } });
+
+    const result = await research({ organizationId: "org-1", topic: "t", primaryKeyword: "k" });
+
+    expect(result.facts).toEqual(["There is very little published information on this niche topic."]);
   });
 });

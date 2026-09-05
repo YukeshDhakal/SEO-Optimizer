@@ -14,8 +14,14 @@ export const topicSelectionSchema = z.object({
 });
 export type TopicSelection = z.infer<typeof topicSelectionSchema>;
 
+// `facts` has no outer `.min(1)`: forcing the model to fabricate a fact when
+// a topic genuinely has thin source material is what was actually causing
+// Gemini's structured-output call to reject its own output (see
+// steps/research.ts's prose-fallback comment) - an honest empty array is a
+// valid model response now, and research() itself guarantees the final
+// ResearchResult never ends up with zero facts.
 export const researchNotesSchema = z.object({
-  facts: z.array(z.string().min(1)).min(1),
+  facts: z.array(z.string().min(1)),
   candidateFaqs: z.array(z.string().min(1)),
 });
 export type ResearchNotes = z.infer<typeof researchNotesSchema>;
