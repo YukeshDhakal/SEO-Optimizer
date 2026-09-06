@@ -76,7 +76,7 @@ describe("embedding", () => {
       expect(getResearchEmbeddingModel()).toBe("gemini-embedding-001");
     });
 
-    it("routes to Ollama's OpenAI-compatible endpoint when RESEARCH_EMBEDDING_PROVIDER=ollama", async () => {
+    it("routes to Ollama's OpenAI-compatible endpoint when RESEARCH_EMBEDDING_PROVIDER=ollama, defaulting the bearer token to the literal string 'ollama'", async () => {
       keysMock.mockReturnValue({ RESEARCH_EMBEDDING_PROVIDER: "ollama" });
       embedMock.mockResolvedValue({ embedding: [0.7] });
 
@@ -84,6 +84,22 @@ describe("embedding", () => {
 
       expect(createOpenAIMock).toHaveBeenCalledWith({ baseURL: "http://localhost:11434/v1", apiKey: "ollama" });
       expect(getResearchEmbeddingModel()).toBe("nomic-embed-text");
+    });
+
+    it("uses OLLAMA_API_KEY as the bearer token when set, for a publicly-hosted Ollama behind auth", async () => {
+      keysMock.mockReturnValue({
+        RESEARCH_EMBEDDING_PROVIDER: "ollama",
+        OLLAMA_BASE_URL: "https://quillrun-ollama.fly.dev/v1",
+        OLLAMA_API_KEY: "real-secret-token",
+      });
+      embedMock.mockResolvedValue({ embedding: [0.7] });
+
+      await generateResearchEmbedding("a research chunk");
+
+      expect(createOpenAIMock).toHaveBeenCalledWith({
+        baseURL: "https://quillrun-ollama.fly.dev/v1",
+        apiKey: "real-secret-token",
+      });
     });
 
     it("routes to OpenAI when RESEARCH_EMBEDDING_PROVIDER=openai and a key is set", async () => {

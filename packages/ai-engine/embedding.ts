@@ -104,9 +104,11 @@ export const generateResearchEmbedding = async (
 
     if (provider === "ollama") {
       const baseURL = keys().OLLAMA_BASE_URL ?? DEFAULT_OLLAMA_BASE_URL;
-      // Ollama ignores the API key on its OpenAI-compatible endpoint, but
-      // the AI SDK's client requires a non-empty string to construct.
-      const ollama = createOpenAI({ baseURL, apiKey: "ollama" });
+      // A local Ollama ignores the API key entirely (the AI SDK's client
+      // just requires a non-empty string to construct), but a publicly
+      // reachable one - see ollama-host/ in the WorkFlow-Automation repo -
+      // is fronted by a proxy that actually checks this as a bearer token.
+      const ollama = createOpenAI({ baseURL, apiKey: keys().OLLAMA_API_KEY ?? "ollama" });
       const { embedding } = await embed({
         model: ollama.textEmbeddingModel(RESEARCH_EMBEDDING_MODEL_OLLAMA),
         value: text.slice(0, 8000),

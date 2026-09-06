@@ -37,6 +37,12 @@ export const keys = () =>
       RESEARCH_EMBEDDING_PROVIDER: z.enum(["google", "ollama", "openai"]).optional(),
       // Defaults to http://localhost:11434/v1 when unset (embedding.ts).
       OLLAMA_BASE_URL: z.string().url().optional(),
+      // A locally-running Ollama has no auth, so the literal string
+      // "ollama" was fine as a placeholder bearer token. A publicly
+      // reachable one (e.g. ollama-host/ in the WorkFlow-Automation repo,
+      // fronted by nginx requiring a real bearer token) needs this set to
+      // the same secret the host expects - see that repo's README.
+      OLLAMA_API_KEY: z.string().optional(),
     },
     runtimeEnv: {
       GOOGLE_GENERATIVE_AI_API_KEY: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
@@ -44,5 +50,6 @@ export const keys = () =>
       OPENAI_API_KEY: process.env.OPENAI_API_KEY,
       RESEARCH_EMBEDDING_PROVIDER: process.env.RESEARCH_EMBEDDING_PROVIDER,
       OLLAMA_BASE_URL: process.env.OLLAMA_BASE_URL,
+      OLLAMA_API_KEY: process.env.OLLAMA_API_KEY,
     },
   });
