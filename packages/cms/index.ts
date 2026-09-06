@@ -16,6 +16,24 @@ export interface CmsImage {
   blurDataURL: string | null;
 }
 
+// Both optional, populated by nothing today (see the file-level comment) -
+// added for the neobrutalism blog redesign's "published by Quillrun" block
+// and sources sidebar, which only render when a post actually carries this
+// data. Never fabricated when absent; the type exists so a future real
+// content backend (one that actually links a marketing post back to the
+// apps/app pipeline_runs row that produced it) is a drop-in fit.
+export interface PostRunProvenance {
+  runId: string;
+  sourceCount: number;
+  gatesPassed: number;
+  humanApproved: boolean;
+}
+
+export interface PostSource {
+  url: string;
+  title: string;
+}
+
 export interface PostMeta {
   _slug: string;
   _title: string;
@@ -24,6 +42,8 @@ export interface PostMeta {
   date: string;
   description: string;
   image: CmsImage;
+  featured?: boolean;
+  runProvenance?: PostRunProvenance;
 }
 
 export interface Post extends PostMeta {
@@ -32,6 +52,7 @@ export interface Post extends PostMeta {
     json: { content: unknown; toc: unknown };
     readingTime: number;
   };
+  sources?: PostSource[];
 }
 
 export const blog = {

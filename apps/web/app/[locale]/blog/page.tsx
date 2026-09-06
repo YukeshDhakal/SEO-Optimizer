@@ -1,13 +1,10 @@
 import { blog } from "@repo/cms";
-import { cn } from "@repo/design-system/lib/utils";
 import { getDictionary } from "@repo/internationalization";
 import type { Blog, WithContext } from "@repo/seo/json-ld";
 import { JsonLd } from "@repo/seo/json-ld";
 import { createMetadata } from "@repo/seo/metadata";
 import type { Metadata } from "next";
-import Image from "next/image";
-import Link from "next/link";
-import { localeHref } from "@/lib/locale-href";
+import { BlogGrid } from "./blog-grid";
 
 interface BlogProps {
   params: Promise<{
@@ -47,47 +44,7 @@ const BlogIndex = async ({ params }: BlogProps) => {
               Field notes from the pipeline
             </span>
           </div>
-          {posts.length === 0 ? (
-            <p className="font-medium text-muted-foreground">
-              No posts yet — check back soon.
-            </p>
-          ) : (
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-              {posts.map((post, index) => (
-                <Link
-                  className={cn(
-                    "flex cursor-pointer flex-col gap-4 border-[3px] border-foreground bg-card shadow-[8px_8px_0_#111] transition-transform hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[12px_12px_0_#111]",
-                    !index && "md:col-span-2"
-                  )}
-                  href={localeHref(locale, `/blog/${post._slug}`)}
-                  key={post._slug}
-                >
-                  <Image
-                    alt={post.image.alt ?? ""}
-                    className="border-b-[3px] border-foreground"
-                    height={post.image.height}
-                    src={post.image.url}
-                    width={post.image.width}
-                  />
-                  <div className="flex flex-col gap-2 px-6 pb-6">
-                    <p className="font-bold text-muted-foreground text-sm">
-                      {new Date(post.date).toLocaleDateString("en-US", {
-                        month: "long",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </p>
-                    <h2 className="font-display max-w-3xl text-2xl leading-tight tracking-tight">
-                      {post._title}
-                    </h2>
-                    <p className="max-w-3xl text-base text-muted-foreground">
-                      {post.description}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
+          <BlogGrid locale={locale} posts={posts} />
         </div>
       </div>
     </>

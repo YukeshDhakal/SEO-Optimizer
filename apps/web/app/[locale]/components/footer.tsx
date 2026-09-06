@@ -14,6 +14,7 @@ interface FooterProps {
 export const Footer = ({ locale }: FooterProps) => {
   const pageLinks = [
     { title: "Home", href: localeHref(locale, "/") },
+    { title: "MCP server", href: localeHref(locale, "/product/mcp") },
     { title: "Writing", href: localeHref(locale, "/blog") },
     { title: "Pricing", href: localeHref(locale, "/pricing") },
     ...(env.NEXT_PUBLIC_DOCS_URL

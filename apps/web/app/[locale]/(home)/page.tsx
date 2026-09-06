@@ -1,14 +1,16 @@
 import { showBetaFeature } from "@repo/feature-flags";
-import { getDictionary } from "@repo/internationalization";
 import { createMetadata } from "@repo/seo/metadata";
 import type { Metadata } from "next";
+import { Audiences } from "./components/audiences";
 import { Cases } from "./components/cases";
 import { CTA } from "./components/cta";
 import { FAQ } from "./components/faq";
 import { Features } from "./components/features";
+import { Guardrails } from "./components/guardrails";
 import { Hero } from "./components/hero";
+import { Loop } from "./components/loop";
+import { McpSection } from "./components/mcp-section";
 import { Stats } from "./components/stats";
-import { Testimonials } from "./components/testimonials";
 
 interface HomeProps {
   params: Promise<{
@@ -16,18 +18,18 @@ interface HomeProps {
   }>;
 }
 
-export const generateMetadata = async ({
-  params,
-}: HomeProps): Promise<Metadata> => {
-  const { locale } = await params;
-  const dictionary = await getDictionary(locale);
-
-  return createMetadata(dictionary.web.home.meta);
-};
+// Metadata hardcoded to match the new hardcoded Home copy - dictionary.web
+// .home.meta reflected the old dictionary-driven positioning, which this
+// page no longer uses.
+export const generateMetadata = async (): Promise<Metadata> =>
+  createMetadata({
+    title: "Autonomous SEO content agent that publishes to your CMS",
+    description:
+      "Quillrun researches from real sources, drafts against the facts it found, runs quality gates, holds for your approval, then publishes to WordPress, Shopify or Webflow.",
+  });
 
 const Home = async ({ params }: HomeProps) => {
   const { locale } = await params;
-  const dictionary = await getDictionary(locale);
   const betaFeature = await showBetaFeature();
 
   return (
@@ -37,13 +39,16 @@ const Home = async ({ params }: HomeProps) => {
           Beta feature now available
         </div>
       )}
-      <Hero dictionary={dictionary} locale={locale} />
+      <Hero locale={locale} />
       <Cases />
-      <Features dictionary={dictionary} />
-      <Stats dictionary={dictionary} />
-      <Testimonials dictionary={dictionary} />
-      <FAQ dictionary={dictionary} locale={locale} />
-      <CTA dictionary={dictionary} locale={locale} />
+      <Loop />
+      <Features />
+      <McpSection locale={locale} />
+      <Guardrails />
+      <Audiences locale={locale} />
+      <Stats />
+      <FAQ />
+      <CTA locale={locale} />
     </>
   );
 };

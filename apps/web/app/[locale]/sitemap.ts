@@ -26,6 +26,13 @@ const sitemap = async (): Promise<MetadataRoute.Sitemap> => [
     url: new URL(page, url).href,
     lastModified: new Date(),
   })),
+  // `pages` above only reads top-level folder names, so a nested route like
+  // this one never gets picked up automatically - listed explicitly instead
+  // of extending the folder-scan to walk nested dirs for just one page.
+  {
+    url: new URL("product/mcp", url).href,
+    lastModified: new Date(),
+  },
   ...blogs.map((blog) => ({
     url: new URL(`blog/${blog}`, url).href,
     lastModified: new Date(),

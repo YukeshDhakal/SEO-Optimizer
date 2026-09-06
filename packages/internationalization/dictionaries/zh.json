@@ -15,7 +15,8 @@
       "docs": "文档",
       "contact": "联系",
       "signIn": "登录",
-      "signUp": "开始使用"
+      "signUp": "开始使用",
+      "mcp": "MCP"
     },
     "home": {
       "meta": {

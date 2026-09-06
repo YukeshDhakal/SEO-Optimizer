@@ -1,30 +1,25 @@
-const MARQUEE_ITEMS = [
-  "Built for teams managing content at scale",
-  "WordPress",
-  "Webflow",
-  "Shopify",
-  "Hosted blog",
-  "Search Console",
-  "Keyword Planner",
-];
-
-// Matches the neobrutalism handoff's marquee strip exactly — a scrolling
-// black band between the hero and the features section. Replaces the
-// previous placeholder "Logo 1..15" carousel (never real content to begin
-// with) with the mock's actual supported-platforms strip.
+// Replaces the animated marquee with the design's static labelled strip -
+// splits "publishes into" (write access) from "reads from" (read-only
+// inputs), which the marquee's flat platform list didn't distinguish.
 export const Cases = () => (
-  <div className="w-full overflow-hidden border-b-[3px] border-foreground bg-foreground py-4">
-    <div className="flex w-max animate-[qr-marquee_26s_linear_infinite] gap-14 whitespace-nowrap font-bold text-[15px] text-background uppercase tracking-[0.06em]">
-      {[0, 1].map((rep) => (
-        <div className="flex gap-14" key={rep}>
-          {MARQUEE_ITEMS.map((item) => (
-            <span className="flex items-center gap-14" key={item}>
-              {item}
-              <span className="text-primary">✳</span>
-            </span>
-          ))}
-        </div>
-      ))}
+  <div className="flex w-full flex-wrap items-center gap-4 border-b-[3px] border-foreground bg-muted px-4 py-4 lg:px-8">
+    <div className="container mx-auto flex flex-wrap items-center gap-4">
+      <span className="font-mono text-[11px] text-muted-foreground uppercase tracking-[0.12em]">
+        Publishes into
+      </span>
+      <span className="font-bold text-sm">WordPress</span>
+      <span className="font-bold text-sm">Shopify</span>
+      <span className="font-bold text-sm">Webflow</span>
+      <span className="text-muted-foreground">·</span>
+      <span className="font-mono text-[11px] text-muted-foreground uppercase tracking-[0.12em]">
+        Reads from
+      </span>
+      <span className="font-bold text-sm">Search Console</span>
+      <span className="font-bold text-sm">Google Ads</span>
+      <span className="flex-1" />
+      <span className="border-2 border-foreground bg-brand-lime px-2 py-0.5 font-bold text-[10px] uppercase tracking-[0.08em]">
+        Placeholder — send customer logos
+      </span>
     </div>
   </div>
 );

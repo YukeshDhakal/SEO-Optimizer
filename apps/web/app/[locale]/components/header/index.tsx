@@ -23,6 +23,7 @@ interface HeaderProps {
 export const Header = ({ dictionary, locale }: HeaderProps) => {
   const navigationItems = [
     { title: dictionary.web.header.home, href: localeHref(locale, "/") },
+    { title: dictionary.web.header.mcp, href: localeHref(locale, "/product/mcp") },
     { title: dictionary.web.header.product.pricing, href: localeHref(locale, "/pricing") },
     { title: dictionary.web.header.blog, href: localeHref(locale, "/blog") },
     ...(env.NEXT_PUBLIC_DOCS_URL
