@@ -7,16 +7,20 @@ import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { getCurrentOrganization } from "../../../lib/organization";
 import { PauseToggleButton } from "../pause-toggle-button";
+import { BoardView } from "./board-view";
 import { ConnectGoogleAdsForm } from "./connect-google-ads-form";
 import { ConnectSearchConsoleForm } from "./connect-search-console-form";
 import { ConnectShopifyForm } from "./connect-shopify-form";
 import { ConnectWebflowForm } from "./connect-webflow-form";
 import { ConnectWordPressForm } from "./connect-wordpress-form";
+import { ConsoleView } from "./console-view";
 import { DeleteSiteButton } from "./delete-site-button";
 import { EditSiteForm } from "./edit-site-form";
 import { OAuthStatusBanner } from "./oauth-status-banner";
+import { findLastFailure, parseViewMode } from "./site-overview-data";
 import { SiteTabs } from "./site-tabs";
-import { runPillStatus } from "../../components/runs-table";
+import { TriageView } from "./triage-view";
+import { ViewSwitcher } from "./view-switcher";
 
 export const metadata: Metadata = {
   title: "Site details",
@@ -24,42 +28,19 @@ export const metadata: Metadata = {
 
 interface SiteDetailPageProperties {
   readonly params: Promise<{ id: string }>;
+  readonly searchParams: Promise<{ view?: string }>;
 }
 
 const startOfWindow = (days: number) =>
   new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
-// Only the "running" case differs from runs-table.tsx's shared runLabel
-// (shows the current step inline, useful in this page's compact recent-runs
-// list) - runPillStatus above is imported instead of duplicated, since it
-// has no such variation.
-const runLabel = (run: { status: string; current_step: string | null }) => {
-  if (run.status === "running" && run.current_step === "approval_gate") {
-    return "Awaiting approval";
-  }
-  if (run.status === "running") {
-    return `Running — ${run.current_step ?? "starting"}`;
-  }
-  if (run.status === "succeeded") {
-    // A succeeded run only ever creates a draft `posts` row - actually
-    // publishing is a separate "Publish now" action (see runs-table.tsx's
-    // own comment on this same fix).
-    return "Draft ready";
-  }
-  if (run.status === "blocked") {
-    return "Blocked by policy";
-  }
-  if (run.status === "rejected") {
-    return "Rejected";
-  }
-  return "Failed";
-};
-
-const topicOf = (input: unknown): string =>
-  (input as { topicHint?: string } | null)?.topicHint ?? "Untitled run";
-
-const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
+const SiteDetailPage = async ({
+  params,
+  searchParams,
+}: SiteDetailPageProperties) => {
   const { id } = await params;
+  const { view } = await searchParams;
+  const viewMode = parseViewMode(view);
   const organization = await getCurrentOrganization();
 
   if (!organization) {
@@ -89,7 +70,8 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
     { count: published30d },
     { count: runs30d },
     { count: succeeded30d },
-    { data: recentRuns },
+    { data: overviewRuns },
+    { data: tenantSettings },
   ] = await Promise.all([
     supabase
       .from("search_console_credentials")
@@ -130,13 +112,42 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
       .eq("site_connection_id", site.id)
       .eq("status", "succeeded")
       .gte("started_at", startOfWindow(30)),
+    // Widened from "last 4" to "last 30" - this one query now backs all
+    // three Overview views (triage/console/board), not just a short recent
+    // list, per the shared-data-shape design in site-overview-data.ts.
     supabase
       .from("pipeline_runs")
-      .select("id, input, status, current_step, started_at")
+      .select("id, input, status, current_step, started_at, finished_at, error, post_id")
       .eq("site_connection_id", site.id)
       .order("started_at", { ascending: false })
-      .limit(4),
+      .limit(30),
+    supabase
+      .from("tenant_settings")
+      .select("require_approval, paused")
+      .eq("organization_id", organization.id)
+      .maybeSingle(),
   ]);
+
+  const runs = overviewRuns ?? [];
+  const postIds = runs
+    .map((run) => run.post_id)
+    .filter((postId): postId is string => Boolean(postId));
+
+  const { data: overviewPosts } =
+    postIds.length > 0
+      ? await supabase
+          .from("posts")
+          .select("id, status, published_at")
+          .in("id", postIds)
+      : { data: [] as { id: string; status: string; published_at: string | null }[] };
+
+  const postStatusById = new Map(
+    (overviewPosts ?? []).map((post) => [post.id, post.status])
+  );
+  const postPublishedAtById = new Map(
+    (overviewPosts ?? []).map((post) => [post.id, post.published_at])
+  );
+  const lastFailure = findLastFailure(runs);
 
   const canManage =
     organization.role === "owner" || organization.role === "admin";
@@ -244,56 +255,34 @@ const SiteDetailPage = async ({ params }: SiteDetailPageProperties) => {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.35fr_1fr]">
-        <div className="border-[3px] border-foreground bg-card">
-          <div className="flex items-center justify-between border-b px-4 py-3">
-            <span className="font-display text-base tracking-tight">
-              RECENT RUNS
-            </span>
-            <Link
-              className="font-medium text-primary text-xs hover:underline"
-              href={`/sites/${site.id}/runs`}
-            >
-              All runs
-            </Link>
-          </div>
-          <div className="flex flex-col divide-y">
-            {(recentRuns ?? []).map((run) => (
-              <Link
-                className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30"
-                href={`/sites/${site.id}/runs/${run.id}`}
-                key={run.id}
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-sm">
-                    {topicOf(run.input)}
-                  </p>
-                  <p className="font-mono text-[11px] text-muted-foreground">
-                    {new Date(run.started_at).toLocaleString()}
-                  </p>
-                </div>
-                <StatusPill status={runPillStatus(run)}>
-                  {runLabel(run)}
-                </StatusPill>
-              </Link>
-            ))}
-            {(recentRuns ?? []).length === 0 && (
-              <p className="px-4 py-4 text-muted-foreground text-sm">
-                No runs yet.{" "}
-                <Link
-                  className="text-primary hover:underline"
-                  href={`/sites/${site.id}/generate`}
-                >
-                  Generate the first one
-                </Link>
-                .
-              </p>
-            )}
-          </div>
-        </div>
-
-        <EditSiteForm site={site} />
+      <div className="flex flex-col gap-3">
+        <ViewSwitcher active={viewMode} siteId={site.id} />
+        {viewMode === "triage" && <TriageView runs={runs} siteId={site.id} />}
+        {viewMode === "console" && (
+          <ConsoleView
+            rail={{
+              cms: { type: site.cms_type, status: site.status },
+              searchConsoleStatus: searchConsoleCredentials?.status ?? null,
+              googleAdsStatus: googleAdsCredentials?.status ?? null,
+              lastFailure,
+              requireApproval: tenantSettings?.require_approval ?? false,
+              globalPaused: tenantSettings?.paused ?? false,
+            }}
+            runs={runs}
+            siteId={site.id}
+          />
+        )}
+        {viewMode === "board" && (
+          <BoardView
+            postPublishedAtById={postPublishedAtById}
+            postStatusById={postStatusById}
+            runs={runs}
+            siteId={site.id}
+          />
+        )}
       </div>
+
+      <EditSiteForm site={site} />
 
       {canManage && (
         <div className="flex flex-col gap-4">
