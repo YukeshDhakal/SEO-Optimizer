@@ -17,20 +17,24 @@ export const keys = () =>
       // for the research step, now that model.ts is on Gemini (which has
       // no equivalent wired up here). Free tier: 1,000 searches/month.
       TAVILY_API_KEY: z.string().startsWith("tvly-").optional(),
-      // Anthropic doesn't serve an embeddings endpoint - duplicate-content
-      // detection (Phase 5) needs a separate provider. Optional/unset is a
-      // real, expected state here (same posture as every other key in this
-      // file): `embedding.ts` degrades to skipping the duplicate check
-      // rather than throwing when this is absent.
+      // Phase 14: OpenAI's embeddings stopped working in production (account
+      // ran out of billing credits, confirmed via Vercel runtime error logs
+      // - AI_APICallError "insufficient_quota"), silently degrading BOTH
+      // generateEmbedding (duplicate-check) and generateResearchEmbedding to
+      // "skipped" the whole time. Kept here, optional, as a manual fallback
+      // if credits are ever restored - no longer the default for either path.
       OPENAI_API_KEY: z.string().startsWith("sk-").optional(),
-      // Phase 11: swappable embedding provider for the research knowledge
-      // base (distinct from OPENAI_API_KEY above, which stays
-      // generateEmbedding's fixed provider for duplicate-content - see
-      // embedding.ts). Defaults to "ollama" (a local, free, already-running
-      // server) when unset, so this feature works with zero configuration
-      // in dev; production needs either a network-reachable Ollama host or
-      // RESEARCH_EMBEDDING_PROVIDER="openai".
-      RESEARCH_EMBEDDING_PROVIDER: z.enum(["ollama", "openai"]).optional(),
+      // Phase 14: swappable embedding provider for the research knowledge
+      // base. "google" (Gemini's gemini-embedding-001, requested at 1536
+      // dimensions to match research_chunks.embedding/posts.content_embedding
+      // with zero migration) is now the default - reuses
+      // GOOGLE_GENERATIVE_AI_API_KEY, already funded and already carrying
+      // every other model call in this package, so this feature needs zero
+      // extra configuration in every environment including production.
+      // "ollama" stays available for local/offline use (Vercel functions
+      // can't reach localhost); "openai" stays available if credits are
+      // ever restored.
+      RESEARCH_EMBEDDING_PROVIDER: z.enum(["google", "ollama", "openai"]).optional(),
       // Defaults to http://localhost:11434/v1 when unset (embedding.ts).
       OLLAMA_BASE_URL: z.string().url().optional(),
     },
