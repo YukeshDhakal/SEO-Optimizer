@@ -1,5 +1,6 @@
 import { StatusPill } from "@repo/design-system/components/status-pill";
 import Link from "next/link";
+import { deriveStageProgress, stagePipFill } from "./stage-progress";
 
 export interface RunRow {
   readonly id: string;
@@ -128,8 +129,33 @@ export const RunsTable = ({
                   {run.siteName}
                 </td>
               )}
-              <td className="px-4 py-3.5 font-semibold">
-                {run.currentStep ?? "—"}
+              <td className="px-4 py-3.5">
+                {(() => {
+                  const progress = deriveStageProgress(run);
+                  return (
+                    <span className="flex items-center gap-2">
+                      <span className="flex shrink-0 gap-[3px]">
+                        {Array.from({ length: progress.total }, (_, index) => {
+                          const fill = stagePipFill(index, progress);
+                          return (
+                            <span
+                              className={`h-3.5 w-[9px] border border-foreground ${
+                                fill === "done"
+                                  ? "bg-brand-lime"
+                                  : fill === "active"
+                                    ? "bg-primary"
+                                    : "bg-card"
+                              }`}
+                              // biome-ignore lint/suspicious/noArrayIndexKey: fixed-length pip array, index is stable
+                              key={index}
+                            />
+                          );
+                        })}
+                      </span>
+                      <span className="truncate font-semibold text-xs">{progress.label}</span>
+                    </span>
+                  );
+                })()}
               </td>
               <td className="px-4 py-3.5 font-mono text-muted-foreground text-xs uppercase">
                 {run.triggerType}

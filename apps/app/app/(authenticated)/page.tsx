@@ -1,9 +1,11 @@
 import { createClient } from "@repo/auth/server";
+import { Button } from "@repo/design-system/components/ui/button";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentOrganization } from "../lib/organization";
-import { type RunRow, RunsTable, contentTypeOf, topicOf } from "./components/runs-table";
+import { FilterableRunsTable } from "./components/filterable-runs-table";
+import { type RunRow, contentTypeOf, topicOf } from "./components/runs-table";
 
 export const metadata: Metadata = {
   title: "Runs",
@@ -13,11 +15,21 @@ export const metadata: Metadata = {
 const startOfWindow = (days: number) =>
   new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
 
-// The Workspace nav's "Runs" landing (root route) — a global, cross-site
-// table, matching the neobrutalism handoff's Runs screen. Folds in the
-// stat cards and "Waiting on you"/"Needs attention" triage panels from the
-// previous Overview page rather than dropping them (per-site sites table
-// dropped here since /sites, its own nav item now, already covers that).
+const timeSince = (iso: string): string => {
+  const ms = Date.now() - new Date(iso).getTime();
+  const hours = Math.floor(ms / (60 * 60 * 1000));
+  if (hours < 1) {
+    return `${Math.max(1, Math.floor(ms / (60 * 1000)))}m`;
+  }
+  const minutes = Math.floor((ms % (60 * 60 * 1000)) / (60 * 1000));
+  return `${hours}h ${minutes}m`;
+};
+
+// Redesigned per the Quillrun Dashboard design doc's 1a ("Triage strip over
+// the table") - triage moves above the table (previously below the fold),
+// five equal stat cards collapse into one strip with real deltas, and the
+// table's Stage column (see components/stage-progress.ts) stops printing
+// raw DB values like `approval_gate`.
 const RunsLandingPage = async () => {
   const organization = await getCurrentOrganization();
   if (!organization) {
@@ -27,6 +39,7 @@ const RunsLandingPage = async () => {
   const supabase = await createClient();
   const [
     { count: publishedCount },
+    { count: publishedPrevCount },
     { count: blockedCount },
     { count: failedCount },
     { data: allRuns },
@@ -40,6 +53,13 @@ const RunsLandingPage = async () => {
       .eq("organization_id", organization.id)
       .eq("status", "published")
       .gte("published_at", startOfWindow(7)),
+    supabase
+      .from("posts")
+      .select("id", { count: "exact", head: true })
+      .eq("organization_id", organization.id)
+      .eq("status", "published")
+      .gte("published_at", startOfWindow(14))
+      .lt("published_at", startOfWindow(7)),
     supabase
       .from("pipeline_runs")
       .select("id", { count: "exact", head: true })
@@ -82,13 +102,22 @@ const RunsLandingPage = async () => {
   ]);
 
   const pausedCount = pausedSites?.length ?? 0;
+  const publishedDelta = (publishedCount ?? 0) - (publishedPrevCount ?? 0);
 
   const stats = [
-    { label: "Published, 7d", value: publishedCount ?? 0 },
-    { label: "Awaiting approval", value: awaitingRuns?.length ?? 0 },
-    { label: "Blocked by policy, 7d", value: blockedCount ?? 0 },
-    { label: "Failed runs, 7d", value: failedCount ?? 0 },
-    { label: "Sites auto paused", value: pausedCount },
+    {
+      label: "Published, 7d",
+      value: publishedCount ?? 0,
+      delta: publishedDelta === 0 ? "" : publishedDelta > 0 ? `+${publishedDelta}` : `${publishedDelta}`,
+    },
+    {
+      label: "Awaiting approval",
+      value: awaitingRuns?.length ?? 0,
+      delta: awaitingRuns?.[0] ? `oldest ${timeSince(awaitingRuns[0].started_at)}` : "",
+    },
+    { label: "Blocked by policy, 7d", value: blockedCount ?? 0, delta: "" },
+    { label: "Failed runs, 7d", value: failedCount ?? 0, delta: "" },
+    { label: "Sites auto paused", value: pausedCount, delta: pausedCount > 0 ? "needs creds" : "" },
   ];
 
   const rows: RunRow[] = (allRuns ?? []).map((run) => ({
@@ -119,56 +148,41 @@ const RunsLandingPage = async () => {
   ];
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-6">
-      <div>
-        <h1 className="font-display text-3xl tracking-tight">RUNS</h1>
-        <p className="mt-1 max-w-2xl text-muted-foreground text-sm">
-          Every pipeline run across every connected site. Anything red or
-          amber wants a person.
-        </p>
+    <div className="flex flex-1 flex-col gap-5 p-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-3xl tracking-tight">RUNS</h1>
+          <p className="mt-1 max-w-2xl text-muted-foreground text-sm">
+            Every run across every site.{" "}
+            {awaitingRuns?.length || attention.length
+              ? `${(awaitingRuns?.length ?? 0) + attention.length} things want a person right now.`
+              : "Nothing needs you right now."}
+          </p>
+        </div>
+        <Button asChild variant="outline">
+          <Link href="/sites">Connect a site</Link>
+        </Button>
       </div>
-
-      <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-5">
-        {stats.map((s) => (
-          <div
-            className="border-[3px] border-foreground bg-card p-3.5 shadow-[5px_5px_0_#111] transition-transform hover:-translate-x-1 hover:-translate-y-1 hover:shadow-[9px_9px_0_#111]"
-            key={s.label}
-          >
-            <div className="font-bold text-[10px] text-muted-foreground uppercase tracking-wider">
-              {s.label}
-            </div>
-            <div className="font-display mt-2 text-3xl tracking-tight">
-              {s.value}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <RunsTable
-        emptyMessage="No runs yet. Connect a site and generate your first post."
-        rows={rows}
-        showSiteColumn={true}
-      />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="border-[3px] border-foreground bg-card p-4">
-          <h2 className="font-display text-lg tracking-tight">
-            WAITING ON YOU
-          </h2>
-          <div className="mt-3 flex flex-col divide-y-2 divide-foreground/15">
+        <div className="border-[3px] border-foreground bg-brand-yellow">
+          <div className="flex items-center gap-2.5 border-foreground border-b-[3px] px-4 py-2.5">
+            <span className="font-display text-sm tracking-wide">WAITING ON YOU</span>
+            <span className="border-2 border-foreground bg-card px-1.5 py-0.5 font-bold text-[11px]">
+              {awaitingRuns?.length ?? 0}
+            </span>
+          </div>
+          <div className="flex flex-col divide-y-2 divide-foreground/20">
             {(awaitingRuns ?? []).map((run) => (
-              <div className="flex items-center gap-3 py-3" key={run.id}>
+              <div className="flex items-center gap-3 bg-card px-4 py-3" key={run.id}>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-bold text-sm">
-                    {topicOf(run.input)}
-                  </p>
+                  <p className="truncate font-bold text-sm">{topicOf(run.input)}</p>
                   <p className="font-mono text-[11px] text-muted-foreground">
-                    {run.site_connections?.display_name} ·{" "}
-                    {new Date(run.started_at).toLocaleString()}
+                    {run.site_connections?.display_name} · waiting {timeSince(run.started_at)}
                   </p>
                 </div>
                 <Link
-                  className="shrink-0 border-2 border-foreground px-2.5 py-1 font-bold text-xs hover:bg-accent"
+                  className="shrink-0 border-2 border-foreground bg-brand-lime px-3 py-1.5 font-bold text-xs hover:bg-card"
                   href={`/sites/${run.site_connections?.id}/runs/${run.id}`}
                 >
                   Review
@@ -176,24 +190,24 @@ const RunsLandingPage = async () => {
               </div>
             ))}
             {(awaitingRuns ?? []).length === 0 && (
-              <p className="py-3 text-muted-foreground text-sm">
+              <p className="bg-card px-4 py-4 text-muted-foreground text-sm">
                 Nothing waiting for review.
               </p>
             )}
           </div>
         </div>
-        <div className="border-[3px] border-foreground bg-card p-4">
-          <h2 className="font-display text-lg tracking-tight">
-            NEEDS ATTENTION
-          </h2>
-          <div className="mt-3 flex flex-col divide-y-2 divide-foreground/15">
+
+        <div className="border-[3px] border-foreground bg-card">
+          <div className="flex items-center gap-2.5 border-b px-4 py-2.5">
+            <span className="font-display text-sm tracking-wide">NEEDS ATTENTION</span>
+            <span className="border-2 border-foreground bg-brand-yellow px-1.5 py-0.5 font-bold text-[11px]">
+              {attention.length}
+            </span>
+          </div>
+          <div className="flex flex-col divide-y-2 divide-foreground/15">
             {attention.map((a) => (
-              <Link
-                className="flex items-start gap-2.5 py-3 hover:text-primary"
-                href={a.href}
-                key={a.key}
-              >
-                <span className="mt-0.5 font-mono text-[10px] text-status-error-fg">
+              <Link className="flex items-start gap-2.5 px-4 py-3 hover:bg-muted/40" href={a.href} key={a.key}>
+                <span className="mt-0.5 flex h-[22px] w-[22px] shrink-0 items-center justify-center border-2 border-foreground bg-foreground font-bold text-[12px] text-background">
                   ✕
                 </span>
                 <div className="min-w-0 flex-1">
@@ -203,13 +217,33 @@ const RunsLandingPage = async () => {
               </Link>
             ))}
             {attention.length === 0 && (
-              <p className="py-3 text-muted-foreground text-sm">
+              <p className="px-4 py-4 text-muted-foreground text-sm">
                 Nothing needs attention right now.
               </p>
             )}
           </div>
         </div>
       </div>
+
+      <div className="flex flex-col divide-x-0 border-[3px] border-foreground bg-card sm:flex-row sm:divide-x-2 sm:divide-border">
+        {stats.map((s) => (
+          <div className="flex-1 border-border border-t-2 p-3.5 sm:border-t-0" key={s.label}>
+            <div className="font-mono text-[10px] text-muted-foreground uppercase tracking-wider">
+              {s.label}
+            </div>
+            <div className="mt-1 flex items-baseline gap-2">
+              <span className="font-display text-2xl tracking-tight">{s.value}</span>
+              {s.delta && <span className="font-bold text-xs">{s.delta}</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <FilterableRunsTable
+        emptyMessage="No runs yet. Connect a site and generate your first post."
+        rows={rows}
+        showSiteColumn={true}
+      />
     </div>
   );
 };

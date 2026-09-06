@@ -70,7 +70,7 @@ export const Hero = async ({ locale }: HeroProps) => {
         <div className="border-[3px] border-foreground bg-card shadow-[7px_7px_0_#111]">
           <div className="flex items-center gap-2 border-foreground border-b-[3px] bg-foreground px-3.5 py-2.5 text-background">
             <span className="h-2.5 w-2.5 animate-pulse border border-background bg-primary" />
-            <span className="font-mono text-xs">live run · quoteengine.com</span>
+            <span className="font-mono text-xs">example run · your-site.com</span>
           </div>
           <div className="flex flex-col gap-2.5 p-3.5">
             {heroSteps.map((step) => (
