@@ -58,7 +58,7 @@ flowchart TD
 
     ks2 -- blocked --> blocked1
     ks2 -- ok --> draftReady[["✅ draft ready in Quillrun"]]
-    draftReady -.->|separate, explicit action| published[["🚀 published to CMS"]]
+    draftReady -.->|"separate, explicit action"| published[["🚀 published to CMS"]]
 ```
 
 A **succeeded** run only ever produces a `draft` post — going live on the tenant's CMS is always a separate, explicit "Publish now" action (or the `publish_post` MCP tool), never automatic.
@@ -94,9 +94,9 @@ packages/
 
 ```mermaid
 flowchart LR
-    dashboard["apps/app\n(tenant dashboard)"] -->|start()| workflow["packages/workflows\ncontent-pipeline.ts"]
-    cron["apps/api\ncron dispatcher"] -->|scheduled| workflow
-    mcpClient["AI client\n(Claude, etc.)"] -->|MCP tool call| mcpServer["apps/api /mcp\n(per-tenant API key)"]
+    dashboard["apps/app\n(tenant dashboard)"] -->|"start()"| workflow["packages/workflows\ncontent-pipeline.ts"]
+    cron["apps/api\ncron dispatcher"] -->|"scheduled"| workflow
+    mcpClient["AI client\n(Claude, etc.)"] -->|"MCP tool call"| mcpServer["apps/api /mcp\n(per-tenant API key)"]
     mcpServer -->|"self-call, same guardrails"| internal["apps/api /internal/*"]
     internal --> workflow
     workflow --> aiengine["packages/ai-engine\nGemini + Tavily"]
