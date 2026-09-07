@@ -50,9 +50,9 @@ flowchart TD
     dup -- ok --> kw[keyword_volume_check]
     kw -- blocked --> blocked1
 
-    kw -- ok --> approval{approval_gate\nrequired?}
-    approval -- "no" --> ks2[kill_switch_check\n(re-check)]
-    approval -- "yes, suspends for real" --> decision{approver\ndecides}
+    kw -- ok --> approval{"approval_gate\nrequired?"}
+    approval -- "no" --> ks2["kill_switch_check\n(re-check)"]
+    approval -- "yes, suspends for real" --> decision{"approver\ndecides"}
     decision -- rejected --> rejected[["✋ rejected"]]
     decision -- approved --> ks2
 
