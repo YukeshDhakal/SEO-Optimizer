@@ -1,5 +1,5 @@
 import { generateObject } from "ai";
-import { buildGuidelineBlock, type ContentType } from "../content-guidelines";
+import { buildGuidelineBlock, FAQ_COUNT_BOUNDS, type ContentType } from "../content-guidelines";
 import { getModel } from "../model";
 import { type Outline, outlineSchema, type ResearchResult, type TopicSelection } from "../schemas";
 import { stripAiDashes } from "../text-sanitize";
@@ -19,16 +19,26 @@ export interface OutlineInput {
 // customer-facing FAQPage JSON-LD via buildSchemaJsonLd in
 // steps/geo-seo-optimize.ts) — sanitize every free-text field here so no
 // em-dash survives regardless of which downstream step consumes it.
-const sanitizeOutline = (object: Outline): Outline => ({
+//
+// faqSection is also truncated to FAQ_COUNT_BOUNDS[contentType].max here -
+// the schema only requires a minimum of 1 (schemas.ts), and the prompt's
+// count guidance alone isn't trusted (this file's established pattern per
+// content-guidelines.ts) - a "blog" outline that comes back with 6+
+// questions gets cut down to the bound rather than retried, keeping the
+// model's own ordering (it's asked to source questions by real demand, so
+// earlier entries are presumed higher-priority).
+export const sanitizeOutline = (object: Outline, contentType: ContentType): Outline => ({
   leadAnswer: stripAiDashes(object.leadAnswer),
   sections: object.sections.map((section) => ({
     heading: stripAiDashes(section.heading),
     bullets: section.bullets.map(stripAiDashes),
   })),
-  faqSection: object.faqSection.map((entry) => ({
-    question: stripAiDashes(entry.question),
-    answer: stripAiDashes(entry.answer),
-  })),
+  faqSection: object.faqSection
+    .slice(0, FAQ_COUNT_BOUNDS[contentType].max)
+    .map((entry) => ({
+      question: stripAiDashes(entry.question),
+      answer: stripAiDashes(entry.answer),
+    })),
 });
 
 export const outline = async (input: OutlineInput): Promise<Outline> => {
@@ -49,5 +59,5 @@ ${input.research.facts.map((f) => `- ${f}`).join("\n")}
 Candidate FAQ questions:
 ${input.research.candidateFaqs.map((q) => `- ${q}`).join("\n")}`,
   });
-  return sanitizeOutline(object);
+  return sanitizeOutline(object, contentType);
 };

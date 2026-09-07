@@ -88,9 +88,21 @@ export const BANNED_PHRASES: readonly string[] = [
   "that is a great question",
 ];
 
+// Per-content-type bounds on faqSection length - the schema only enforces
+// a minimum of 1 (see schemas.ts's outlineSchema), so without an explicit
+// target the model has generated as many as 5+ loosely-related questions on
+// a "blog" piece, reading like an FAQ dump grafted onto an article rather
+// than a structured one. Enforced deterministically in outline.ts's
+// sanitizeOutline (truncation, not retry) - matches this file's established
+// "prompt guidance is necessary but not sufficient" pattern.
+export const FAQ_COUNT_BOUNDS: Record<ContentType, { min: number; max: number }> = {
+  blog: { min: 2, max: 4 },
+  faq: { min: 6, max: 8 },
+};
+
 const CONTENT_TYPE_STRUCTURE: Record<ContentType, string> = {
-  blog: `Structure (standard informational article): an opening answer block of 40-60 words that directly answers the title's question before any preamble, then 6-9 H2 sections each covering one distinct subtopic question, then the FAQ section. Total length is a consequence of how many real subtopic questions exist, never a target to hit - stop adding sections once you run out of genuinely distinct questions; padding length without a new question actively hurts (citation rates decline past 7,500 words).`,
-  faq: `Structure (FAQ-first page): an opening answer block of 40-60 words that directly answers the title's question, then exactly 2 short context sections (each under 160 words) covering only the essential background a reader needs before the FAQ, then a substantial FAQ section - aim for the full 8 questions, since the FAQ section carries the primary content weight on this page rather than the body sections.`,
+  blog: `Structure (standard informational article): an opening answer block of 40-60 words that directly answers the title's question before any preamble, then 6-9 H2 sections each covering one distinct subtopic question, then a short FAQ section of ${FAQ_COUNT_BOUNDS.blog.min}-${FAQ_COUNT_BOUNDS.blog.max} questions covering real follow-on queries not already answered by the body sections above - this is a supplement to the article, not a second article. Total length is a consequence of how many real subtopic questions exist, never a target to hit - stop adding sections once you run out of genuinely distinct questions; padding length without a new question actively hurts (citation rates decline past 7,500 words).`,
+  faq: `Structure (FAQ-first page): an opening answer block of 40-60 words that directly answers the title's question, then exactly 2 short context sections (each under 160 words) covering only the essential background a reader needs before the FAQ, then a substantial FAQ section - aim for the full ${FAQ_COUNT_BOUNDS.faq.max} questions, since the FAQ section carries the primary content weight on this page rather than the body sections.`,
 };
 
 // Builds the full guideline block for a given content type - used by both
